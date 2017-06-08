@@ -1,6 +1,6 @@
 import click
 
-from .tasks import update_logs as _update_logs
+from .helpers import Web3Helpers
 
 
 @click.group()
@@ -18,8 +18,10 @@ def update_logs(contract, block, uri):
     """
     Update logs 
     """
-    contract, from_block, to_block = _update_logs(contract, block, uri)
+    web3_helper = Web3Helpers()
+    contract, from_block, to_block = web3_helper.update_logs(contract, block, uri)
     block_count = to_block - from_block + 1
     output = "Correctly updated logs for contract [id=%s] at address %s from block %s to %s (total %s blocks)" % \
              (contract.id, contract.address, from_block, to_block, block_count)
     click.echo(click.style(output, fg='green', bold=True))
+
