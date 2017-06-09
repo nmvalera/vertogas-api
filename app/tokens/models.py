@@ -1,5 +1,5 @@
 from sqlalchemy import Column, String, Integer, Boolean, LargeBinary, DateTime, \
-    ForeignKey, UniqueConstraint, Index, PrimaryKeyConstraint
+    ForeignKey, UniqueConstraint, Index, ForeignKeyConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -53,33 +53,6 @@ class Event(Base):
         return '<Event %s>' % self.name
 
 
-class Log(Base):
-    """
-    Contains information about event logs
-    """
-    __tablename__ = LOG_TABLENAME
-    __table_args__ = (UniqueConstraint('event_id', 'block_number'),)
-
-    id = Column(Integer, primary_key=True)
-
-    event_id = Column(Integer, ForeignKey('%s.id' % EVENT_TABLENAME))
-    event = relationship('Event', back_populates='logs')
-
-    block_hash = Column(String)
-    block_number = Column(Integer)
-    log_index = Column(Integer)
-
-    transaction_hash = Column(String)
-    transaction_index = Column(Integer)
-
-    timestamp = Column(DateTime)
-
-    args = Column(LargeBinary)
-
-    def __repr__(self):
-        return '<Log id=%s (%s)>' % (self.id, self.event)
-
-
 class Token(Base):
     """
     Contains token information
@@ -92,9 +65,9 @@ class Token(Base):
 
     id = Column(Integer, primary_key=True)
 
-    contract_id = Column(Integer, ForeignKey('%s.id' % CONTRACT_TABLENAME))
     certificate_id = Column(String)
 
+    contract_id = Column(Integer, ForeignKey('%s.id' % CONTRACT_TABLENAME))
     contract = relationship('Contract', back_populates='tokens')
 
     meta_data = Column(LargeBinary)
@@ -103,3 +76,36 @@ class Token(Base):
 
     is_claimed = Column(Boolean, default=False)
     claimer = Column(String)
+
+    logs = relationship('Log', back_populates='token', lazy='dynamic')
+
+
+class Log(Base):
+    """
+    Contains information about event logs
+    """
+    __tablename__ = LOG_TABLENAME
+    __table_args__ = (
+        UniqueConstraint('event_id', 'token_id', 'block_number'),
+    )
+
+    id = Column(Integer, primary_key=True)
+
+    event_id = Column(Integer, ForeignKey('%s.id' % EVENT_TABLENAME))
+    event = relationship('Event', back_populates='logs')
+
+    token_id = Column(Integer, ForeignKey('%s.id' % TOKEN_TABLENAME))
+    token = relationship('Token', back_populates='logs')
+
+    block_number = Column(Integer)
+    block_hash = Column(String)
+
+    transaction_hash = Column(String)
+    transaction_index = Column(Integer)
+
+    timestamp = Column(DateTime)
+
+    args = Column(LargeBinary)
+
+    def __repr__(self):
+        return '<Log id=%s (%s)>' % (self.id, self.event)

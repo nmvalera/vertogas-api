@@ -1,10 +1,11 @@
 import json
 
+from eth_utils import encode_hex
 from sqlalchemy import and_
 
+from .models import Base
 from .models import Contract, Event, Log, Token
 from .serializers import rpc_response_schema
-from .models import Base
 from .session import create_session_maker
 from ..common.constants import NEW_CERTIFICATE_EVENT_NAME, TRANSFER_CERTIFICATE_EVENT_NAME, \
     CLAIM_CERTIFICATE_EVENT_NAME, ADMIN_CLEANING_EVENT_NAME, \
@@ -30,6 +31,7 @@ class TokenHelpers:
 
     def init_db(self):
         Base.metadata.drop_all(self.session.get_bind())
+        #self.session.get_bind().execute("drop schema if exists public cascade")
         Base.metadata.create_all(self.session.get_bind())
 
         return Base.metadata.tables
@@ -84,7 +86,7 @@ class TokenHelpers:
 
     def get_logs(self, contract_id):
         query = self.session. \
-            query(Contract.id, Event.name, Log.block_number, Log.timestamp, Log.args). \
+            query(Log). \
             filter(Contract.id == contract_id). \
             filter(and_(Contract.id == Event.contract_id, Event.id == Log.event_id)). \
             order_by(Log.block_number)
@@ -197,7 +199,7 @@ class TokenHelpers:
         """
         Insert an event log in the database and perform corresponding modification
         :param event_id: id of the event the log corresponds to
-        :param block: information about the log block
+        :param block: information about the block the log belongs to
         :param log: dict log as received from the RPC call
         :return: Log object
         """
@@ -210,25 +212,29 @@ class TokenHelpers:
             'Event %s type is not correct (expected "%s")' % (event_id, log['event'])
         assert event.contract.address == log['address'], \
             'Event %s contract\'s address is not correct  (expected %s)' % (event_id, log['address'])
+
+        # format log arguments
+        args = {k: encode_hex(v) for k, v in log['args'].items()}
         
-        log = rpc_response_schema(event, block).load(log).data
-        self._add(log)
-        self.flush()
-        
-        # computes the arguments of the event
-        args = json.loads(log.args.decode())
-        
-        # perform modifications on tokens database
+        # perform modifications on tokens table
         if event.name == NEW_CERTIFICATE_EVENT_NAME:
-            self.create_token(event.contract.id, args[TOKEN_ID_KEY], args[TOKEN_META_DATA_KEY], args[TOKEN_OWNER_KEY])
+            token = self.create_token(event.contract.id, args[TOKEN_ID_KEY], args[TOKEN_META_DATA_KEY], args[TOKEN_OWNER_KEY])
 
         elif event.name == TRANSFER_CERTIFICATE_EVENT_NAME:
-            self.transfer_token(event.contract.id, args[TOKEN_ID_KEY], args[FROM_ADDRESS_KEY], args[TO_ADDRESS_KEY])
+            token = self.transfer_token(event.contract.id, args[TOKEN_ID_KEY], args[FROM_ADDRESS_KEY], args[TO_ADDRESS_KEY])
 
         elif event.name == CLAIM_CERTIFICATE_EVENT_NAME:
-            self.claim_token(event.contract.id, args[TOKEN_ID_KEY], args[FROM_ADDRESS_KEY])
+            token = self.claim_token(event.contract.id, args[TOKEN_ID_KEY], args[FROM_ADDRESS_KEY])
 
         elif event.name == ADMIN_CLEANING_EVENT_NAME:
-            self.claim_token(event.contract.id, args[TOKEN_ID_KEY])
+            token = self.claim_token(event.contract.id, args[TOKEN_ID_KEY])
+
+        else:
+            token = None
+
+        # Add the log to the logs table
+        log = rpc_response_schema(event, token, block).load(log).data
+        self._add(log)
+        self.flush()
 
         return log

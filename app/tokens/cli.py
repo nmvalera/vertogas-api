@@ -96,11 +96,9 @@ def logs(contract, uri):
     token_helpers = TokenHelpers(uri)
     contract = token_helpers.get_contract(contract)
     click.echo(click.style("Contract [id=%s] at address %s" % (contract.id, contract.address), bold=True))
-    tab._set_field_names(['Event Name', 'Token ID', 'Block Number', 'Block Timestamp'])
+    tab._set_field_names(['Event Name', 'Token ID', 'Certificate ID', 'Block Number', 'Block Timestamp'])
     for log in token_helpers.get_logs(contract.id):
-        args = json.loads(log.args)
-        token_id = args[TOKEN_ID_KEY]
-        tab.add_row([log.name, token_id, log.block_number, log.timestamp])
+        tab.add_row([log.event.name, log.token_id, log.token.certificate_id, log.block_number, log.timestamp])
     click.echo(tab.get_string())
 
 

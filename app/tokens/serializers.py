@@ -58,12 +58,17 @@ class RPCResponseSchema(Schema):
     @post_load
     def wrap_log(self, log):
         event_id = self.context.get('event').id
+        if self.context.get('token'):
+            token_id = self.context.get('token').id
+        else:
+            token_id = None
         timestamp = datetime.datetime.fromtimestamp(self.context['block'][BLOCK_TIMESTAMP_KEY])
-        return Log(event_id=event_id, timestamp=timestamp, **log)
+        return Log(event_id=event_id, token_id=token_id, timestamp=timestamp, **log)
 
 
-def rpc_response_schema(event, block):
+def rpc_response_schema(event, token, block):
     schema = RPCResponseSchema()
     schema.context['event'] = event
     schema.context['block'] = block
+    schema.context['token'] = token
     return schema
