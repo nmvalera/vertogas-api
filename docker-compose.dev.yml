@@ -1,0 +1,50 @@
+version: '3'
+services:
+  app:
+    build: .
+    env_file: .env
+    environment:
+      - FLASK_DEBUG=True
+    command: /usr/local/bin/gunicorn -w 2 -b :80 run:app
+    volumes:
+      - .:/usr/src/app
+    networks:
+      - traefikportainer_webgateway
+      - backend
+    depends_on:
+      - rabbitmq
+      - postgres
+    labels:
+      - "traefik.enable=true"
+      - "traefik.frontend.rule=Host:app.localhost"
+      - "traefik.docker.network=traefikportainer_webgateway"
+
+  postgres:
+    image: postgres:9.6-alpine
+    networks:
+      - backend
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:3.6-alpine
+    networks:
+      - backend
+    env_file: .env
+    environment:
+    #TODO .env
+      RABBITMQ_DEFAULT_PASS: user
+      RABBITMQ_DEFAULT_USER: password
+      RABBITMQ_DEFAULT_VHOST: vertogas
+
+
+networks:
+  backend:
+    driver: bridge
+  traefikportainer_webgateway:
+    external: true
+
+
+volumes:
+  db-data:
+    driver: local

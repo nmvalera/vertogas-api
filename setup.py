@@ -18,11 +18,14 @@ setup(
     long_description=read('README.md'),
     include_package_data=True,
     install_requires=[
+        'celery==4.0.2',
         'certifi==2017.4.17',
         'chardet==3.0.3',
         'click==6.7',
         'ethereum-abi-utils==0.4.0',
         'ethereum-utils==0.2.0',
+        'flask==0.12.1',
+        'gunicorn==19.7.1'
         'idna==2.5',
         'marshmallow==2.13.5',
         'prettytable==0.7.2',
@@ -35,8 +38,8 @@ setup(
         'urllib3==1.21.1',
         'web3==3.8.1',
     ],
-    extra_requires={
-        'develop': [
+    extras_require={
+        'dev': [
             'coverage',
             'pytest>3',
             'pytest-cov',
@@ -46,12 +49,7 @@ setup(
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Operating System :: OS Independent',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.0',
-        'Programming Language :: Python :: 3.3',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
     ],
