@@ -5,7 +5,7 @@ from sqlalchemy import and_
 
 from .models import Base
 from .models import Contract, Event, Log, Token
-from .serializers import rpc_response_schema
+from .serializers import rpc_to_log_schema
 from .session import create_session_maker
 from ..common.constants import NEW_CERTIFICATE_EVENT_NAME, TRANSFER_CERTIFICATE_EVENT_NAME, \
     CLAIM_CERTIFICATE_EVENT_NAME, ADMIN_CLEANING_EVENT_NAME, \
@@ -31,7 +31,6 @@ class TokenHelpers:
 
     def init_db(self):
         Base.metadata.drop_all(self.session.get_bind())
-        #self.session.get_bind().execute("drop schema if exists public cascade")
         Base.metadata.create_all(self.session.get_bind())
 
         return Base.metadata.tables
@@ -75,14 +74,18 @@ class TokenHelpers:
     def get_event(self, event_id):
         return self.session.query(Event).filter_by(id=event_id).first()
 
-    def get_token(self, contract_id, certificate_id):
-        return self.session.query(Token).filter_by(contract_id=contract_id, certificate_id=certificate_id).first()
+    def get_token(self, **kwargs):
+        return self.session.query(Token).filter_by(**kwargs).first()
 
     def get_contracts(self):
         query = self.session. \
             query(Contract). \
             filter(Contract.is_listening)
         return query.all()
+
+    def get_events(self, contract_id):
+        contract = self.get_contract(contract_id)
+        return contract.events.all()
 
     def get_logs(self, contract_id):
         query = self.session. \
@@ -124,12 +127,13 @@ class TokenHelpers:
             return contract
         return
 
-    def set_last_block(self, contract, last_block):
+    def set_last_block(self, contract_id, last_block):
         """
         Set the value of the last block which data has been parsed for a contract
-        :param contract: contract to be set
+        :param contract_id: id of the contract to be set
         :param last_block: last block number 
         """
+        contract = self.get_contract(contract_id)
         contract.last_block = last_block
         self.flush()
 
@@ -171,10 +175,10 @@ class TokenHelpers:
         :param to_address: address of the new owner
         :return: token on the new owner
         """
-        token = self.get_token(contract_id, certificate_id)
-        if token:
-            # ensure from_address corresponds to the owner address
-            assert token.owner == from_address
+        token = self.get_token(contract_id=contract_id, certificate_id=certificate_id)
+
+        # ensure from_address corresponds to the owner address
+        if token and token.owner == from_address:
             token.owner = to_address
             self.flush()
         return token
@@ -187,9 +191,11 @@ class TokenHelpers:
         :param claimer_address: claimer's address in the Blockchain
         :return: claimed token
         """
-        token = self.get_token(contract_id, certificate_id)
-        if token:
-            assert claimer_address is None or token.owner == claimer_address
+        token = self.get_token(contract_id=contract_id, certificate_id=certificate_id)
+        contract = self.get_contract(contract_id)
+
+        # ensure claimer's address corresponds to the owner address or is admin
+        if token and (claimer_address in [token.owner, contract.admin_address]):
             token.is_claimed = True
             token.claimer = claimer_address
             self.flush()
@@ -206,35 +212,54 @@ class TokenHelpers:
         event = self.get_event(event_id)
         
         # ensure the log corresponds to the expected event
-        assert event is not None, \
-            'There is no event with id=%s' % event_id
-        assert event.name == log['event'], \
-            'Event %s type is not correct (expected "%s")' % (event_id, log['event'])
-        assert event.contract.address == log['address'], \
-            'Event %s contract\'s address is not correct  (expected %s)' % (event_id, log['address'])
+        if (event is not None) and (log['event'] == event.name) and (log['address'] == event.contract.address):
+            # format log arguments
+            args = {k: encode_hex(v) for k, v in log['args'].items()}
 
-        # format log arguments
-        args = {k: encode_hex(v) for k, v in log['args'].items()}
-        
-        # perform modifications on tokens table
-        if event.name == NEW_CERTIFICATE_EVENT_NAME:
-            token = self.create_token(event.contract.id, args[TOKEN_ID_KEY], args[TOKEN_META_DATA_KEY], args[TOKEN_OWNER_KEY])
+            # perform modifications on tokens table
+            if event.name == NEW_CERTIFICATE_EVENT_NAME:
+                token = self.create_token(event.contract.id,
+                                          args[TOKEN_ID_KEY],
+                                          args[TOKEN_META_DATA_KEY],
+                                          args[TOKEN_OWNER_KEY])
 
-        elif event.name == TRANSFER_CERTIFICATE_EVENT_NAME:
-            token = self.transfer_token(event.contract.id, args[TOKEN_ID_KEY], args[FROM_ADDRESS_KEY], args[TO_ADDRESS_KEY])
+            elif event.name == TRANSFER_CERTIFICATE_EVENT_NAME:
+                token = self.transfer_token(event.contract.id,
+                                            args[TOKEN_ID_KEY],
+                                            args[FROM_ADDRESS_KEY],
+                                            args[TO_ADDRESS_KEY])
 
-        elif event.name == CLAIM_CERTIFICATE_EVENT_NAME:
-            token = self.claim_token(event.contract.id, args[TOKEN_ID_KEY], args[FROM_ADDRESS_KEY])
+            elif event.name == CLAIM_CERTIFICATE_EVENT_NAME:
+                token = self.claim_token(event.contract.id,
+                                         args[TOKEN_ID_KEY],
+                                         args[FROM_ADDRESS_KEY])
 
-        elif event.name == ADMIN_CLEANING_EVENT_NAME:
-            token = self.claim_token(event.contract.id, args[TOKEN_ID_KEY])
+            elif event.name == ADMIN_CLEANING_EVENT_NAME:
+                token = self.claim_token(event.contract.id,
+                                         args[TOKEN_ID_KEY])
 
-        else:
-            token = None
+            else:
+                token = None
 
-        # Add the log to the logs table
-        log = rpc_response_schema(event, token, block).load(log).data
-        self._add(log)
-        self.flush()
+            # Add the log to the logs table
+            log = rpc_to_log_schema(event, token, block).load(log).data
+            self._add(log)
+            self.flush()
 
-        return log
+            return token
+        return
+
+    def insert_logs(self, contract_id, logs, to_block):
+        """
+        Insert a batch of logs
+        :param contract_id: id of the contract the logs refer to
+        :param logs: list of logs to insert (logs must ordered by ascending block number)
+        :param to_block: block number to update the contract last block visited
+        :return: list of modified tokens
+        """
+        # Get ids of every modified token
+        token_ids = list(set([getattr(self.insert_log(log['event_id'], log['block'], log['log']), 'id', None)
+                              for log in logs]))
+        self.set_last_block(contract_id, to_block)
+
+        return [self.get_token(id=token_id) for token_id in token_ids if token_id is not None]

@@ -9,6 +9,9 @@ from ..common.constants import BLOCK_HASH_KEY, BLOCK_NUMBER_KEY, BLOCK_TIMESTAMP
     TRANSACTION_HASH_KEY, TRANSACTION_INDEX_KEY, \
     ARGS_KEY
 
+class EventSchema(Schema):
+    id = fields.Int()
+    name = fields.Str()
 
 class ContractSchema(Schema):
     id = fields.Int()
@@ -16,6 +19,7 @@ class ContractSchema(Schema):
     is_listening = fields.Boolean()
     last_block = fields.Integer()
     abi = fields.Str()
+    events = fields.Nested(EventSchema, many=True)
 
 
 contract_schema = ContractSchema()
@@ -30,7 +34,18 @@ class LogSchema(Schema):
 log_schema = LogSchema()
 
 
-class RPCResponseSchema(Schema):
+class TokenSchema(Schema):
+    id = fields.Int()
+    certificate_id = fields.Str()
+    meta_data = fields.Str()
+    owner = fields.Str()
+    is_claimed = fields.Bool()
+    claimer = fields.Str()
+
+token_schema = TokenSchema()
+
+
+class RPCToLogSchema(Schema):
     block_hash = fields.Str(
         load_from=BLOCK_HASH_KEY,
         required=True
@@ -66,8 +81,8 @@ class RPCResponseSchema(Schema):
         return Log(event_id=event_id, token_id=token_id, timestamp=timestamp, **log)
 
 
-def rpc_response_schema(event, token, block):
-    schema = RPCResponseSchema()
+def rpc_to_log_schema(event, token, block):
+    schema = RPCToLogSchema()
     schema.context['event'] = event
     schema.context['block'] = block
     schema.context['token'] = token

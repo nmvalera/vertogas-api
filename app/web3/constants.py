@@ -1,4 +1,18 @@
 # Celery tasks
+TASK_PREFIX = 'web3'
+TASK_GET_EVENT_LOGS = '%s.get_event_logs' % TASK_PREFIX
+TASK_ENRICH_LOG = '%s.enrich_log' % TASK_PREFIX
+TASK_FORMAT_LOGS = '%s.format_log' % TASK_PREFIX
+TASK_ENRICH_LOGS = '%s.enrich_logs' % TASK_PREFIX
+TASK_GET_LOGS = '%s.get_logs' % TASK_PREFIX
+TASK_GET_ENRICHED_LOGS = '%s.get_enrich_logs' % TASK_PREFIX
 
-TASK_UPDATE_LOG = 'update_logs'
 
+WEB_TASKS = [
+    TASK_GET_EVENT_LOGS,
+    TASK_ENRICH_LOG,
+    TASK_FORMAT_LOGS,
+    TASK_ENRICH_LOGS,
+    TASK_GET_LOGS,
+    TASK_GET_ENRICHED_LOGS,
+]

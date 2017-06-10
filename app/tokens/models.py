@@ -24,6 +24,8 @@ class Contract(Base):
 
     abi = Column(LargeBinary)
 
+    admin_address = Column(String, unique=True)
+
     is_listening = Column(Boolean, default=True)
     last_block = Column(Integer, default=-1)
 

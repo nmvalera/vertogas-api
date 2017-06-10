@@ -17,12 +17,20 @@ class Web3Config(ParityServerConfig):
     SAFETY_BLOCK_COUNT = 10
 
 
+class CeleryConfig:
+    CELERY_MODULE_NAME = 'app'  # CELERY_MODULE_NAME is not a default celery's config
+
+    CELERY_BROKER_URL = 'amqp://user:password@rabbitmq:5672/vertogas'
+    CELERY_RESULT_BACKEND = 'rpc://'
+    CELERY_ACCEPT_CONTENT = ['json']
+
+
 class FlaskConfig:
     assert 'FLASK_DEBUG' in os.environ, "Environment variable FLASK_DEBUG has not been defined"
     DEBUG = os.environ['FLASK_DEBUG']
 
 
-class Config(DatabaseConfig, Web3Config, FlaskConfig):
+class Config(DatabaseConfig, Web3Config, CeleryConfig, FlaskConfig):
     pass
 
 config = Config

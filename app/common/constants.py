@@ -26,3 +26,13 @@ TOKEN_OWNER_KEY = 'owner'
 TOKEN_META_DATA_KEY = 'metaData'
 FROM_ADDRESS_KEY = 'from'
 TO_ADDRESS_KEY = 'to'
+
+# Main tasks
+TASK_PREFIX = 'main'
+TASK_UPDATE_LOGS = '%s.update_logs' % TASK_PREFIX
+TASK_UPDATE_ALL_CONTRACTS = '%s.update_all_contracts' % TASK_PREFIX
+
+MAIN_TASKS = [
+    TASK_UPDATE_LOGS,
+    TASK_UPDATE_ALL_CONTRACTS,
+]
