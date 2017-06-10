@@ -7,6 +7,7 @@ from .helpers import Web3Helpers
 def cli():
     pass
 
+
 @cli.command('update_logs')
 @click.option('--contract',
               help='ID of the contracts')
@@ -24,4 +25,3 @@ def update_logs(contract, block, uri):
     output = "Correctly updated logs for contract [id=%s] at address %s from block %s to %s (total %s blocks)" % \
              (contract.id, contract.address, from_block, to_block, block_count)
     click.echo(click.style(output, fg='green', bold=True))
-
