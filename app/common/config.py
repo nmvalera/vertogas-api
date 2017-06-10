@@ -1,3 +1,6 @@
+import os
+
+
 class DatabaseConfig:
     # Database URI
     DATABASE_URI = "postgresql://postgres:postgres@localhost:5432/postgres"
@@ -13,7 +16,13 @@ class Web3Config(ParityServerConfig):
     # Number of block to wait before inserting an event in the database
     SAFETY_BLOCK_COUNT = 10
 
-class Config(DatabaseConfig, Web3Config):
+
+class FlaskConfig:
+    assert 'FLASK_DEBUG' in os.environ, "Environment variable FLASK_DEBUG has not been defined"
+    DEBUG = os.environ['FLASK_DEBUG']
+
+
+class Config(DatabaseConfig, Web3Config, FlaskConfig):
     pass
 
 config = Config
