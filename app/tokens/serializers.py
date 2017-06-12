@@ -9,9 +9,11 @@ from ..common.constants import BLOCK_HASH_KEY, BLOCK_NUMBER_KEY, BLOCK_TIMESTAMP
     TRANSACTION_HASH_KEY, TRANSACTION_INDEX_KEY, \
     ARGS_KEY
 
+
 class EventSchema(Schema):
     id = fields.Int()
     name = fields.Str()
+
 
 class ContractSchema(Schema):
     id = fields.Int()
@@ -45,7 +47,10 @@ class TokenSchema(Schema):
 token_schema = TokenSchema()
 
 
-class RPCToLogSchema(Schema):
+class RPCLoaderSchema(Schema):
+    """
+    Allows to load a log dictionary into a SQLAlchemy Log object 
+    """
     block_hash = fields.Str(
         load_from=BLOCK_HASH_KEY,
         required=True
@@ -66,7 +71,8 @@ class RPCToLogSchema(Schema):
 
     args = fields.Method(deserialize='load_args', load_from=ARGS_KEY)
 
-    def load_args(self, args):
+    @staticmethod
+    def load_args(args):
         # Reformat jsonRPC response args in hex format (for readability)
         return json.dumps({k: encode_hex(v) for k, v in args.items()}, separators=(',', ':')).encode()
 
@@ -77,12 +83,12 @@ class RPCToLogSchema(Schema):
             token_id = self.context.get('token').id
         else:
             token_id = None
-        timestamp = datetime.datetime.fromtimestamp(self.context['block'][BLOCK_TIMESTAMP_KEY])
+        timestamp = datetime.datetime.fromtimestamp(log['block'][BLOCK_TIMESTAMP_KEY])
         return Log(event_id=event_id, token_id=token_id, timestamp=timestamp, **log)
 
 
-def rpc_to_log_schema(event, token, block):
-    schema = RPCToLogSchema()
+def rpc_loader_schema(event, token, block):
+    schema = RPCLoaderSchema()
     schema.context['event'] = event
     schema.context['block'] = block
     schema.context['token'] = token

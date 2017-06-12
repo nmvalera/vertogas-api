@@ -27,7 +27,7 @@ var
 sdist
 develop-eggs
 .installed.cfg
-
+celerybeat-schedule
 
 # Installer logs
 pip-log.txt
@@ -42,7 +42,6 @@ pip-log.txt
 
 #Mr Developer
 venv
-*.pyc
 
 
 

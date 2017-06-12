@@ -3,7 +3,7 @@ import os
 
 class DatabaseConfig:
     # Database URI
-    DATABASE_URI = "postgresql://postgres:postgres@localhost:5432/postgres"
+    DATABASE_URI = "postgresql://postgres:postgres@vertogastokenapp_postgres_1:5432/postgres"
 
 
 class ParityServerConfig:
@@ -20,14 +20,13 @@ class Web3Config(ParityServerConfig):
 class CeleryConfig:
     CELERY_MODULE_NAME = 'app'  # CELERY_MODULE_NAME is not a default celery's config
 
-    CELERY_BROKER_URL = 'amqp://user:password@rabbitmq:5672/vertogas'
-    CELERY_RESULT_BACKEND = 'rpc://'
+    BROKER_URL = 'redis://redis:6379/0'
+    CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
     CELERY_ACCEPT_CONTENT = ['json']
 
 
 class FlaskConfig:
-    assert 'FLASK_DEBUG' in os.environ, "Environment variable FLASK_DEBUG has not been defined"
-    DEBUG = os.environ['FLASK_DEBUG']
+    DEBUG = os.environ.get('FLASK_DEBUG', True)
 
 
 class Config(DatabaseConfig, Web3Config, CeleryConfig, FlaskConfig):

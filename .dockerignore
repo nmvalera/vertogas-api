@@ -7,6 +7,7 @@
 Dockerfile
 docker-compose.dev.yml
 docker-compose-dev.yml
+.env
 
 # Python
 *.o
@@ -20,6 +21,7 @@ dist/
 .ipynb_checkpoints/*
 *.py[co]
 *.DS_*
+celerybeat-schedule
 
 # Packages
 *.egg
@@ -46,7 +48,6 @@ pip-log.txt
 
 #Mr Developer
 venv
-*.pyc
 
 
 # Data

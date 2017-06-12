@@ -1,10 +1,7 @@
-import json
-
 import click
 from prettytable import PrettyTable
 
 from .helpers import TokenHelpers
-from ..common.constants import TOKEN_ID_KEY
 
 
 @click.group()
@@ -98,7 +95,7 @@ def logs(contract, uri):
     click.echo(click.style("Contract [id=%s] at address %s" % (contract.id, contract.address), bold=True))
     tab._set_field_names(['Event Name', 'Token ID', 'Certificate ID', 'Block Number', 'Block Timestamp'])
     for log in token_helpers.get_logs(contract.id):
-        tab.add_row([log.event.name, log.token_id, log.token.certificate_id, log.block_number, log.timestamp])
+        tab.add_row([log.event.name, log.token_id, log.token and log.token.certificate_id, log.block_number, log.timestamp])
     click.echo(tab.get_string())
 
 

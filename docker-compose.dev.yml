@@ -5,14 +5,14 @@ services:
     env_file: .env
     environment:
       - FLASK_DEBUG=True
-    command: /usr/local/bin/gunicorn -w 2 -b :80 run:app
+    command: sh run.sh
     volumes:
       - .:/usr/src/app
     networks:
       - traefikportainer_webgateway
       - backend
     depends_on:
-      - rabbitmq
+      - redis
       - postgres
     labels:
       - "traefik.enable=true"
@@ -26,17 +26,11 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
 
-  rabbitmq:
-    image: rabbitmq:3.6-alpine
+  redis:
+    image: redis:3.2-alpine
     networks:
       - backend
     env_file: .env
-    environment:
-    #TODO .env
-      RABBITMQ_DEFAULT_PASS: user
-      RABBITMQ_DEFAULT_USER: password
-      RABBITMQ_DEFAULT_VHOST: vertogas
-
 
 networks:
   backend:

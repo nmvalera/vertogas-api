@@ -1,11 +1,12 @@
-FROM python:3.6-alpine
+FROM python:3.6
 
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 
-ONBUILD COPY setup.py /usr/src/app/
-ONBUILD RUN pip install --no-cache-dir -e .
+COPY requirements.txt /usr/src/app/
+RUN pip install -r requirements.txt
 
-ONBUILD COPY . /usr/src/app
+COPY . /usr/src/app
+RUN pip install -e .
 
 EXPOSE 80

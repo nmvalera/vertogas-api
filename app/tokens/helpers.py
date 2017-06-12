@@ -5,12 +5,12 @@ from sqlalchemy import and_
 
 from .models import Base
 from .models import Contract, Event, Log, Token
-from .serializers import rpc_to_log_schema
+from .serializers import rpc_loader_schema
 from .session import create_session_maker
 from ..common.constants import NEW_CERTIFICATE_EVENT_NAME, TRANSFER_CERTIFICATE_EVENT_NAME, \
     CLAIM_CERTIFICATE_EVENT_NAME, ADMIN_CLEANING_EVENT_NAME, \
     TOKEN_ID_KEY, TOKEN_OWNER_KEY, TOKEN_META_DATA_KEY, \
-    FROM_ADDRESS_KEY, TO_ADDRESS_KEY
+    FROM_ADDRESS_KEY, TO_ADDRESS_KEY, TO_BLOCK_KEY
 
 
 class TokenHelpers:
@@ -77,10 +77,13 @@ class TokenHelpers:
     def get_token(self, **kwargs):
         return self.session.query(Token).filter_by(**kwargs).first()
 
-    def get_contracts(self):
+    def get_contracts(self, only_listening=True):
         query = self.session. \
-            query(Contract). \
-            filter(Contract.is_listening)
+            query(Contract)
+
+        if not only_listening:
+            query = query.filter(Contract.is_listening)
+
         return query.all()
 
     def get_events(self, contract_id):
@@ -201,14 +204,16 @@ class TokenHelpers:
             self.flush()
         return token
 
-    def insert_log(self, event_id, block, log):
+    def insert_log(self, log):
         """
         Insert an event log in the database and perform corresponding modification
-        :param event_id: id of the event the log corresponds to
-        :param block: information about the block the log belongs to
         :param log: dict log as received from the RPC call
         :return: Log object
         """
+        event_id = log['event_id']
+        log = log['log']
+        block = log['block']
+
         event = self.get_event(event_id)
         
         # ensure the log corresponds to the expected event
@@ -242,24 +247,34 @@ class TokenHelpers:
                 token = None
 
             # Add the log to the logs table
-            log = rpc_to_log_schema(event, token, block).load(log).data
+            log = rpc_loader_schema(event, token, block).load(log).data
             self._add(log)
             self.flush()
 
             return token
         return
 
-    def insert_logs(self, contract_id, logs, to_block):
+    def insert_logs(self, logs):
         """
         Insert a batch of logs
-        :param contract_id: id of the contract the logs refer to
         :param logs: list of logs to insert (logs must ordered by ascending block number)
-        :param to_block: block number to update the contract last block visited
         :return: list of modified tokens
         """
-        # Get ids of every modified token
-        token_ids = list(set([getattr(self.insert_log(log['event_id'], log['block'], log['log']), 'id', None)
-                              for log in logs]))
-        self.set_last_block(contract_id, to_block)
+        if isinstance(logs, list):
+            return sum([self.insert_logs(log) for log in logs], [])
 
-        return [self.get_token(id=token_id) for token_id in token_ids if token_id is not None]
+        else:
+            # compute parameters of interest
+            contract_id = logs['contract']['id']
+            to_block = logs['filter_param'][TO_BLOCK_KEY]
+            logs = logs['data']
+
+            # calculate the set of token ids that have been modified
+            token_ids = [getattr(self.insert_log(log), 'id', None) for log in logs]
+            if None in token_ids:
+                token_ids.remove(None)
+            token_ids = list(set(token_ids))  # get unique ids
+            self.set_last_block(contract_id, to_block)
+
+            # return the current state of each modified token
+            return [self.get_token(id=token_id) for token_id in token_ids]
