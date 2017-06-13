@@ -93,11 +93,11 @@ def _test_set_last_block(contract_id, new_last_block):
     token_helpers = TokenHelpers()
     contract = token_helpers.get_contract(contract_id)
     former_last_block = contract.last_block
-    token_helpers.set_last_block(contract, new_last_block)
+    token_helpers.set_last_block(contract_id, new_last_block)
     assert TokenHelpers().get_contract(contract_id).last_block == former_last_block
     token_helpers.commit()
     assert token_helpers.get_contract(contract_id).last_block == new_last_block
-    token_helpers.set_last_block(contract, former_last_block)
+    token_helpers.set_last_block(contract_id, former_last_block)
     token_helpers.commit()
     assert TokenHelpers().get_contract(contract_id).last_block == former_last_block
 
@@ -113,7 +113,7 @@ def _test_create_new_token(contract_id, certificate_id, meta_data, owner):
     assert len(TokenHelpers().get_tokens(contract_id)) == tokens_count
     token_helpers.commit()
     assert len(TokenHelpers().get_tokens(contract_id)) == tokens_count + 1
-    token = TokenHelpers().get_token(contract_id, token.certificate_id)
+    token = TokenHelpers().get_token(id=token.id)
     assert token.contract_id == contract_id
     assert token.meta_data == meta_data.encode()
     assert token.owner == owner
@@ -139,19 +139,29 @@ def test_create_token():
             _test_create_new_token(contract_id, certificate_id, meta_data, owner)
     _test_create_existing_token(1, 'beef', 'meta_data_bis', '0x123434314')
 
+def _test_token_content_equals(t1, t2):
+    assert t1.certificate_id == t2.certificate_id
+    assert t1.meta_data == t2.meta_data
 
 def _test_authorized_transfer_token(contract_id, certificate_id, from_address, to_address):
     token_helpers = TokenHelpers()
+    token = TokenHelpers().get_token(contract_id=contract_id, certificate_id=certificate_id)
     token_helpers.transfer_token(contract_id, certificate_id, from_address, to_address)
-    assert token_helpers.get_token(contract_id, certificate_id).owner == from_address
+    assert token_helpers.get_token(id=token.id).owner == from_address
     token_helpers.commit()
-    assert TokenHelpers().get_token(contract_id, certificate_id).owner == to_address
+    transferred_token = TokenHelpers().get_token(id=token.id)
+    assert transferred_token.owner == to_address
+    _test_token_content_equals(transferred_token, token)
 
 
 def _test_unauthorized_transfer_token(contract_id, certificate_id, from_address, to_address):
     token_helpers = TokenHelpers()
-    with pytest.raises(AssertionError):
-        token_helpers.transfer_token(contract_id, certificate_id, from_address, to_address)
+    token = TokenHelpers().get_token(contract_id=contract_id, certificate_id=certificate_id)
+    token_helpers.transfer_token(contract_id, certificate_id, from_address, to_address)
+    token_helpers.commit()
+    transferred_token = TokenHelpers().get_token(id=token.id)
+    assert transferred_token.owner == token.owner
+    _test_token_content_equals(token, transferred_token)
 
 
 def test_transfer_token():
@@ -171,18 +181,25 @@ def test_transfer_token():
 
 def _test_authorized_claim_token(contract_id, certificate_id, claimer_address):
     token_helpers = TokenHelpers()
+    token = TokenHelpers().get_token(contract_id=contract_id, certificate_id=certificate_id)
     token_helpers.claim_token(contract_id, certificate_id, claimer_address)
-    assert not TokenHelpers().get_token(contract_id, certificate_id).is_claimed
+    assert not TokenHelpers().get_token(id=token.id).is_claimed
     token_helpers.commit()
-    assert TokenHelpers().get_token(contract_id, certificate_id).is_claimed
-    assert TokenHelpers().get_token(contract_id, certificate_id).claimer == claimer_address
+    claimed_token = TokenHelpers().get_token(id=token.id)
+    assert claimed_token.is_claimed
+    assert claimed_token.claimer == claimer_address
+    _test_token_content_equals(token, claimed_token)
 
 
 def _test_unauthorized_claim_token(contract_id, certificate_id, claimer_address):
     token_helpers = TokenHelpers()
-    with pytest.raises(AssertionError):
-        token_helpers.claim_token(contract_id, certificate_id, claimer_address)
-
+    token = TokenHelpers().get_token(contract_id=contract_id, certificate_id=certificate_id)
+    token_helpers.claim_token(contract_id, certificate_id, claimer_address)
+    token_helpers.commit()
+    claimed_token = TokenHelpers().get_token(id=token.id)
+    assert claimed_token.owner == token.owner
+    assert not claimed_token.is_claimed
+    _test_token_content_equals(token, claimed_token)
 
 def test_claim_token():
     contract_id = 1
@@ -198,12 +215,12 @@ def test_claim_token():
     _test_authorized_claim_token(contract_id, certificate_id, valid_claimer_address)
 
 
-def make_log(event_name, extra_args):
+def make_log(event_id, event_name, extra_args):
     args = {
         'certifID': "0x6d01278accde8008e5c8abdc07fad5",
     }
     args.update(extra_args)
-    return {
+    log = {
         'args': args,
         'event': event_name,
         'logIndex': 0,
@@ -211,69 +228,71 @@ def make_log(event_name, extra_args):
         'transactionHash': '0x6d0127880085c8abdc07f5fb21b53ed8b2f5eebe53477b647fd11e6943e8a344',
         'address': CONTRACT_ADDRESS,
         'blockHash': '0xde89a5107e263ebb1158ca8366207ebded167848588ca5c3982f2cef85eebcf3',
-        'blockNumber': 1802481
+        'blockNumber': 1802481,
+        'block': {
+            'timestamp': 1424182926,
+        }
+    }
+    return {
+        'event_id': event_id,
+        'log': log,
     }
 
 
-def make_new_certificate_log(event_name=NEW_CERTIFICATE_EVENT_NAME):
+def make_new_certificate_log(event_id, event_name=NEW_CERTIFICATE_EVENT_NAME):
     extra_args = {
         'owner': '0x13377b14b615fff59c8e66288c32365d38181cdb',
         'metaData': '0x6d0127880085c8abdc07f5dadb23329bcad23',
     }
-    return make_log(event_name, extra_args)
+    return make_log(event_id, event_name, extra_args)
 
 
-def make_transfer_certificate_log(event_name=TRANSFER_CERTIFICATE_EVENT_NAME):
+def make_transfer_certificate_log(event_id, event_name=TRANSFER_CERTIFICATE_EVENT_NAME):
     extra_args = {
         'from': '0x13377b14b615fff59c8e66288c32365d38181cdb',
         'to': '0x13377b14b615fff59c8e66288c32365d38181cdb',
     }
-    return make_log(event_name, extra_args)
+    return make_log(event_id, event_name, extra_args)
 
 
-def make_claim_certificate_log(event_name=CLAIM_CERTIFICATE_EVENT_NAME):
+def make_claim_certificate_log(event_id, event_name=CLAIM_CERTIFICATE_EVENT_NAME):
     extra_args = {
         'from': '0x13377b14b615fff59c8e66288c32365d38181cdb',
     }
-    return make_log(event_name, extra_args)
+    return make_log(event_id, event_name, extra_args)
 
 
-def make_admin_clean_certificate_log(event_name=ADMIN_CLEANING_EVENT_NAME):
+def make_admin_clean_certificate_log(event_id, event_name=ADMIN_CLEANING_EVENT_NAME):
     extra_args = {}
-    return make_log(event_name, extra_args)
+    return make_log(event_id, event_name, extra_args)
 
 
-def _test_invalid_log_insertion(event_id, log):
+def _test_invalid_log_insertion(log):
     token_helpers = TokenHelpers()
-    with pytest.raises(AssertionError):
-        token_helpers.insert_log(event_id, {'timestamp': 1424182926}, log)
+    assert token_helpers.insert_log(log) == None
 
 
-def _test_valid_log_insertion(event_id, log):
+def _test_valid_log_insertion(log):
     token_helpers = TokenHelpers()
-    token_helpers.insert_log(event_id, {'timestamp': 1424182926}, log)
+    assert token_helpers.insert_log(log) is not None
     token_helpers.commit()
 
 
 def test_insert_log():
-    log = make_new_certificate_log()
-    _test_invalid_log_insertion(10, log)  # event_id does not exist
+    _test_invalid_log_insertion(make_new_certificate_log(10))  # event_id does not exist
     for i in [2, 3, 4]:
-        _test_invalid_log_insertion(i, log)  # event name does not match
-    _test_invalid_log_insertion(5, log)  # contract address does not match
-    _test_valid_log_insertion(1, log)
+        _test_invalid_log_insertion(make_new_certificate_log(i))  # event name does not match
+    _test_invalid_log_insertion(make_new_certificate_log(5))  # contract address does not match
+    _test_valid_log_insertion(make_new_certificate_log(1))
 
-    log = make_transfer_certificate_log()
     for i in [1, 3, 4]:
-        _test_invalid_log_insertion(i, log)  # event name does not match
-    _test_valid_log_insertion(2, log)
+        _test_invalid_log_insertion(make_transfer_certificate_log(i))  # event name does not match
+    _test_valid_log_insertion(make_transfer_certificate_log(2))
 
-    log = make_claim_certificate_log()
     for i in [1, 2, 4]:
-        _test_invalid_log_insertion(i, log)  # event name does not match
-    _test_valid_log_insertion(3, log)
+        _test_invalid_log_insertion(make_claim_certificate_log(i))  # event name does not match
+    _test_valid_log_insertion(make_claim_certificate_log(3))
 
-    log = make_admin_clean_certificate_log()
     for i in [1, 2, 3]:
-        _test_invalid_log_insertion(i, log)  # event name does not match
-    _test_valid_log_insertion(4, log)
+        _test_invalid_log_insertion(make_admin_clean_certificate_log(i))  # event name does not match
+    _test_valid_log_insertion(make_admin_clean_certificate_log(4))

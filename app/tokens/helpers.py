@@ -184,11 +184,12 @@ class TokenHelpers:
         if token and token.owner == from_address:
             token.owner = to_address
             self.flush()
-        return token
+            return token
+        return
 
     def claim_token(self, contract_id, certificate_id, claimer_address=None):
         """
-        Claim a token
+        Claim a tis_claimedoken
         :param contract_id: id of the contract the token has been instantiated by        
         :param certificate_id: id of the token to claim
         :param claimer_address: claimer's address in the Blockchain
@@ -202,7 +203,8 @@ class TokenHelpers:
             token.is_claimed = True
             token.claimer = claimer_address
             self.flush()
-        return token
+            return token
+        return
 
     def insert_log(self, log):
         """
@@ -247,9 +249,10 @@ class TokenHelpers:
                 token = None
 
             # Add the log to the logs table
-            log = rpc_loader_schema(event, token, block).load(log).data
-            self._add(log)
-            self.flush()
+            if token is not None:
+                log = rpc_loader_schema(event, token, block).load(log).data
+                self._add(log)
+                self.flush()
 
             return token
         return

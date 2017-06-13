@@ -83,7 +83,7 @@ class RPCLoaderSchema(Schema):
             token_id = self.context.get('token').id
         else:
             token_id = None
-        timestamp = datetime.datetime.fromtimestamp(log['block'][BLOCK_TIMESTAMP_KEY])
+        timestamp = datetime.datetime.fromtimestamp(self.context.get('block')[BLOCK_TIMESTAMP_KEY])
         return Log(event_id=event_id, token_id=token_id, timestamp=timestamp, **log)
 
 
