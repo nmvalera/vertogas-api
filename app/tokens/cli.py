@@ -10,13 +10,11 @@ def cli():
 
 
 @cli.command('init_db')
-@click.option('--uri',
-              help='URI of the database (e.g. postgresql://postgres:postgres@localhost:5432/postgres)')
-def init_db(uri):
+def init_db():
     """
     Initialize the database 
     """
-    token_helpers = TokenHelpers(uri)
+    token_helpers = TokenHelpers()
     tables = token_helpers.init_db()
     token_helpers.commit()
     output_msg = "Vertogas database has been correctly initialized with %s tables:" % len(tables)
@@ -30,13 +28,11 @@ def init_db(uri):
               help='Contract address in the Blockchain')
 @click.option('--abi',
               help='Path of the file containing the contract abi')
-@click.option('--uri',
-              help='URI of the database (e.g. postgresql://postgres:postgres@localhost:5432/postgres)')
-def insert_contract(address, abi, uri):
+def insert_contract(address, abi):
     """
     Insert a contract in the database 
     """
-    token_helpers = TokenHelpers(uri)
+    token_helpers = TokenHelpers()
     with open(abi, 'rb') as json_abi:
         abi = json_abi.read()
         contract = token_helpers.insert_contract(address, abi)
@@ -64,14 +60,12 @@ def contracts(uri):
 @cli.command('events')
 @click.option('--contract',
               help='ID of the contracts')
-@click.option('--uri',
-              help='URI of the database (e.g. postgresql://postgres:postgres@localhost:5432/postgres)')
-def events(contract, uri):
+def events(contract):
     """
     List all events for a given contract
     """
     tab = PrettyTable()
-    token_helpers = TokenHelpers(uri)
+    token_helpers = TokenHelpers()
     contract = token_helpers.get_contract(contract)
     click.echo(click.style("Contract [id=%s] at address %s" % (contract.id, contract.address), bold=True))
     tab._set_field_names(['Event Name', 'Log count'])
@@ -83,14 +77,12 @@ def events(contract, uri):
 @cli.command('logs')
 @click.option('--contract',
               help='ID of the contracts')
-@click.option('--uri',
-              help='URI of the database (e.g. postgresql://postgres:postgres@localhost:5432/postgres)')
-def logs(contract, uri):
+def logs(contract):
     """
     List all logs for a given contract
     """
     tab = PrettyTable()
-    token_helpers = TokenHelpers(uri)
+    token_helpers = TokenHelpers()
     contract = token_helpers.get_contract(contract)
     click.echo(click.style("Contract [id=%s] at address %s" % (contract.id, contract.address), bold=True))
     tab._set_field_names(['Event Name', 'Token ID', 'Certificate ID', 'Block Number', 'Block Timestamp'])
@@ -102,14 +94,12 @@ def logs(contract, uri):
 @cli.command('tokens')
 @click.option('--contract',
               help='ID of the contracts')
-@click.option('--uri',
-              help='URI of the database (e.g. postgresql://postgres:postgres@localhost:5432/postgres)')
-def tokens(contract, uri):
+def tokens(contract):
     """
     List all tokens for a given contract
     """
     tab = PrettyTable()
-    token_helpers = TokenHelpers(uri)
+    token_helpers = TokenHelpers()
     contract = token_helpers.get_contract(contract)
     click.echo(click.style("Contract [id=%s] at address %s" % (contract.id, contract.address), bold=True))
     tab._set_field_names(['Token ID', 'Owner', 'Claimed'])

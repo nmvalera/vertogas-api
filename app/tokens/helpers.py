@@ -6,7 +6,7 @@ from sqlalchemy import and_
 from .models import Base
 from .models import Contract, Event, Log, Token
 from .serializers import rpc_loader_schema
-from .session import create_session_maker
+from .session import session
 from ..common.constants import NEW_CERTIFICATE_EVENT_NAME, TRANSFER_CERTIFICATE_EVENT_NAME, \
     CLAIM_CERTIFICATE_EVENT_NAME, ADMIN_CLEANING_EVENT_NAME, \
     TOKEN_ID_KEY, TOKEN_OWNER_KEY, TOKEN_META_DATA_KEY, \
@@ -14,11 +14,8 @@ from ..common.constants import NEW_CERTIFICATE_EVENT_NAME, TRANSFER_CERTIFICATE_
 
 
 class TokenHelpers:
-    def __init__(self, session=None):
-        if isinstance(session, str) or session is None:
-            self.session = create_session_maker(session)()
-        else:
-            self.session = session
+    def __init__(self, session=session):
+        self.session = session
 
     def _add(self, obj):
         self.session.add(obj)
@@ -29,10 +26,19 @@ class TokenHelpers:
     def flush(self):
         self.session.flush()
 
+    def rollback(self):
+        self.session.rollback()
+
+    def close(self):
+        self.session.close()
+
     def init_db(self):
         Base.metadata.drop_all(self.session.get_bind())
         Base.metadata.create_all(self.session.get_bind())
+        return Base.metadata.tables
 
+    def drop_db(self):
+        Base.metadata.drop_all(self.session.get_bind())
         return Base.metadata.tables
 
     def insert_contract(self, address, contract_abi):
