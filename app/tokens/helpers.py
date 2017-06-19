@@ -2,11 +2,13 @@ import json
 
 from eth_utils import encode_hex
 from sqlalchemy import and_
+from sqlalchemy.exc import IntegrityError
 
 from .models import Base
 from .models import Contract, Event, Log, Token
 from .serializers import rpc_loader_schema
-from .session import session
+from .session import session as default_session
+from .utils import insert_table
 from ..common.constants import NEW_CERTIFICATE_EVENT_NAME, TRANSFER_CERTIFICATE_EVENT_NAME, \
     CLAIM_CERTIFICATE_EVENT_NAME, ADMIN_CLEANING_EVENT_NAME, \
     TOKEN_ID_KEY, TOKEN_OWNER_KEY, TOKEN_META_DATA_KEY, \
@@ -14,7 +16,7 @@ from ..common.constants import NEW_CERTIFICATE_EVENT_NAME, TRANSFER_CERTIFICATE_
 
 
 class TokenHelpers:
-    def __init__(self, session=session):
+    def __init__(self, session=default_session):
         self.session = session
 
     def _add(self, obj):
@@ -40,6 +42,10 @@ class TokenHelpers:
     def drop_db(self):
         Base.metadata.drop_all(self.session.get_bind())
         return Base.metadata.tables
+
+    def insert_table(self, path, table_name):
+        con = self.session.get_bind().connect()
+        insert_table(path, table_name, con)
 
     def insert_contract(self, address, contract_abi):
         """
@@ -74,8 +80,22 @@ class TokenHelpers:
         self.flush()
         return event
 
-    def get_contract(self, contract_id):
-        return self.session.query(Contract).filter_by(id=contract_id).first()
+    def get_contract(self, contract_id=None):
+        if contract_id:
+            return self.session.query(Contract).filter_by(id=contract_id).first()
+        else:
+            return self.get_less_updated_contract()
+
+    def get_less_updated_contract(self):
+        """
+        Get the contract that is listening with the lower last block number
+        :return: contract
+        """
+        query = self.session. \
+            query(Contract). \
+            filter(Contract.is_listening). \
+            order_by(Contract.last_block)
+        return query.first()
 
     def get_event(self, event_id):
         return self.session.query(Event).filter_by(id=event_id).first()
@@ -83,32 +103,50 @@ class TokenHelpers:
     def get_token(self, **kwargs):
         return self.session.query(Token).filter_by(**kwargs).first()
 
-    def get_contracts(self, only_listening=True):
+    def get_contracts(self, contract_ids=None, only_listening=True):
         query = self.session. \
             query(Contract)
 
-        if not only_listening:
+        if contract_ids is not None:
+            query = query.filter(Contract.id.in_(contract_ids))
+
+        elif only_listening:
             query = query.filter(Contract.is_listening)
 
         return query.all()
 
     def get_events(self, contract_id):
-        contract = self.get_contract(contract_id)
-        return contract.events.all()
-
-    def get_logs(self, contract_id):
         query = self.session. \
-            query(Log). \
-            filter(Contract.id == contract_id). \
-            filter(and_(Contract.id == Event.contract_id, Event.id == Log.event_id)). \
-            order_by(Log.block_number)
+            query(Event). \
+            filter_by(contract_id=contract_id)
+
         return query.all()
 
-    def get_tokens(self, contract_id):
-        contract = self.get_contract(contract_id)
-        if contract:
-            return contract.tokens.all()
-        return []
+    def get_logs(self, contract_id=None, token_id=None):
+
+        query = self.session. \
+            query(Log)
+
+        if contract_id is not None:
+            query = query.filter(Contract.id == contract_id). \
+                filter(and_(Contract.id == Event.contract_id, Event.id == Log.event_id))
+
+        if token_id is not None:
+            query = query.filter_by(token_id=token_id)
+
+        query = query.order_by(Log.block_number)
+
+        return query.all()
+
+    def get_tokens(self, contract_id, power_plant_id=None):
+        query = self.session. \
+            query(Token). \
+            filter_by(contract_id=contract_id)
+
+        if power_plant_id is not None:
+            query = query.filter_by(power_plant_id=power_plant_id)
+
+        return query.all()
 
     def start_listening(self, contract_id):
         """
@@ -146,17 +184,6 @@ class TokenHelpers:
         contract.last_block = last_block
         self.flush()
 
-    def get_less_updated_contract(self):
-        """
-        Get the contract that is listening with the lower last block number
-        :return: contract
-        """
-        query = self.session. \
-            query(Contract). \
-            filter(Contract.is_listening). \
-            order_by(Contract.last_block)
-        return query.first()
-
     def create_token(self, contract_id, certificate_id, meta_data, owner):
         """
         Create a new token
@@ -169,10 +196,14 @@ class TokenHelpers:
         """
         token = Token(certificate_id=certificate_id,
                       contract_id=contract_id,
-                      meta_data=meta_data.encode(),
+                      meta_data=meta_data,
                       owner=owner)
         self._add(token)
-        self.flush()
+        try:
+            self.flush()
+        except IntegrityError:
+            self.rollback()
+            return
         return token
 
     def transfer_token(self, contract_id, certificate_id, from_address, to_address):
@@ -256,11 +287,9 @@ class TokenHelpers:
 
             # Add the log to the logs table
             if token is not None:
-                log = rpc_loader_schema(event, token, block).load(log).data
-                self._add(log)
+                self._add(rpc_loader_schema(event, token, block).load(log).data)
                 self.flush()
-
-            return token
+                return token
         return
 
     def insert_logs(self, logs):
@@ -270,7 +299,8 @@ class TokenHelpers:
         :return: list of modified tokens
         """
         if isinstance(logs, list):
-            return sum([self.insert_logs(log) for log in logs], [])
+            logs_tokens = [self.insert_logs(log) for log in logs]
+            return [log_token for log_token in logs_tokens if log_token is not None]
 
         else:
             # compute parameters of interest
@@ -278,12 +308,17 @@ class TokenHelpers:
             to_block = logs['filter_param'][TO_BLOCK_KEY]
             logs = logs['data']
 
-            # calculate the set of token ids that have been modified
-            token_ids = [getattr(self.insert_log(log), 'id', None) for log in logs]
-            if None in token_ids:
-                token_ids.remove(None)
-            token_ids = list(set(token_ids))  # get unique ids
-            self.set_last_block(contract_id, to_block)
+            if self.get_contract(contract_id) is not None:
+                # calculate the set of token ids that have been modified
+                token_ids = [getattr(self.insert_log(log), 'id', None) for log in logs]
+                if None in token_ids:
+                    token_ids.remove(None)
+                token_ids = list(set(token_ids))  # get unique ids
+                self.set_last_block(contract_id, to_block)
 
-            # return the current state of each modified token
-            return [self.get_token(id=token_id) for token_id in token_ids]
+                # return the current state of each modified token
+                return {
+                    'logs': logs,
+                    'tokens': [self.get_token(id=token_id) for token_id in token_ids],
+                }
+            return

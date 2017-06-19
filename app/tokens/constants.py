@@ -14,6 +14,10 @@ LOG_TABLENAME = 'logs'
 # Token table
 TOKEN_TABLENAME = 'tokens'
 
+POWER_PLANT_TABLENAME = 'power_plants'
+MIX_TABLENAME = 'mixes'
+BIOMASS_TABLENAME = 'biomass'
+
 # celery tasks
 TASK_PREFIX = 'tokens'
 TASK_INSERT_LOGS = '%s.insert_log' % TASK_PREFIX

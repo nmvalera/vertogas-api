@@ -1,11 +1,12 @@
 from sqlalchemy import Column, String, Integer, Boolean, LargeBinary, DateTime, \
-    ForeignKey, UniqueConstraint, Index, ForeignKeyConstraint
+    ForeignKey, UniqueConstraint, Index
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
 from .constants import CONTRACT_TABLENAME, \
     EVENT_TABLENAME, EVENT_NAME_LENGTH, \
     LOG_TABLENAME, \
+    POWER_PLANT_TABLENAME, MIX_TABLENAME, BIOMASS_TABLENAME, \
     TOKEN_TABLENAME
 
 Base = declarative_base()
@@ -55,33 +56,6 @@ class Event(Base):
         return '<Event %s>' % self.name
 
 
-class Token(Base):
-    """
-    Contains token information
-    """
-    __tablename__ = TOKEN_TABLENAME
-    __table_args__ = (
-        UniqueConstraint('contract_id', 'certificate_id'),
-        Index('owner_index', 'owner'),
-    )
-
-    id = Column(Integer, primary_key=True)
-
-    certificate_id = Column(String)
-
-    contract_id = Column(Integer, ForeignKey('%s.id' % CONTRACT_TABLENAME))
-    contract = relationship('Contract', back_populates='tokens')
-
-    meta_data = Column(LargeBinary)
-
-    owner = Column(String)
-
-    is_claimed = Column(Boolean, default=False)
-    claimer = Column(String)
-
-    logs = relationship('Log', back_populates='token', lazy='dynamic')
-
-
 class Log(Base):
     """
     Contains information about event logs
@@ -111,3 +85,74 @@ class Log(Base):
 
     def __repr__(self):
         return '<Log id=%s (%s)>' % (self.id, self.event)
+
+
+class PowerPlant(Base):
+    __tablename__ = POWER_PLANT_TABLENAME
+    __table_args__ = (Index('%s.owner_index' % POWER_PLANT_TABLENAME, 'owner'),)
+
+    id = Column(Integer, primary_key=True)
+    meta_data = Column(String, unique=True)
+
+    name = Column(String)
+
+    owner = Column(String)
+
+    tokens = relationship('Token', back_populates='power_plant', lazy='dynamic')
+
+    mix = relationship('Biomass',
+                       back_populates='power_plants',
+                       secondary=MIX_TABLENAME,
+                       lazy='dynamic')
+
+    def __repr__(self):
+        return '<PowerPlant id=%s (%s)>' % (self.id, self.name)
+
+
+class Biomass(Base):
+    __tablename__ = BIOMASS_TABLENAME
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, unique=True)
+
+    power_plants = relationship('PowerPlant',
+                                back_populates='mix',
+                                secondary=MIX_TABLENAME,
+                                lazy='dynamic')
+
+
+class Mix(Base):
+    __tablename__ = MIX_TABLENAME
+    __table_args__ = (UniqueConstraint('power_plant_id', 'biomass_id'),)
+
+    id = Column(Integer, primary_key=True)
+
+    power_plant_id = Column(Integer, ForeignKey('%s.id' % POWER_PLANT_TABLENAME))
+    biomass_id = Column(Integer, ForeignKey('%s.id' % BIOMASS_TABLENAME))
+
+    ratio = Column(Integer)
+
+
+class Token(Base):
+    __tablename__ = TOKEN_TABLENAME
+    __table_args__ = (
+        UniqueConstraint('contract_id', 'certificate_id'),
+        Index('%s.owner_index' % TOKEN_TABLENAME, 'owner'),
+    )
+
+    id = Column(Integer, primary_key=True)
+
+    certificate_id = Column(String)
+
+    contract_id = Column(Integer, ForeignKey('%s.id' % CONTRACT_TABLENAME))
+    contract = relationship('Contract', back_populates='tokens')
+
+    meta_data = Column(String, ForeignKey('%s.meta_data' % POWER_PLANT_TABLENAME))
+    power_plant = relationship('PowerPlant', back_populates='tokens')
+
+    owner = Column(String)
+
+    is_claimed = Column(Boolean, default=False)
+    claimer = Column(String)
+
+    logs = relationship('Log', back_populates='token', lazy='dynamic')

@@ -1,6 +1,7 @@
 import click
 from prettytable import PrettyTable
 
+from .constants import POWER_PLANT_TABLENAME, BIOMASS_TABLENAME, MIX_TABLENAME
 from .helpers import TokenHelpers
 
 
@@ -23,6 +24,30 @@ def init_db():
         click.echo(click.style("- %s" % table_name, fg='green'))
 
 
+@cli.command('insert_data')
+@click.option('--paths', '-p',
+              multiple=True,
+              help='Paths of the .pickle data files you wish to insert')
+def insert_data(paths):
+    """
+    Insert power plants information 
+    """
+
+    for path in paths:
+        file_name = path.split('/')[-1]
+        if file_name.split('.')[1] != 'pickle':
+            click.echo(click.style("Can only insert .pickle files" , fg='red', bold=True))
+        else:
+            valid_file_names = [POWER_PLANT_TABLENAME, BIOMASS_TABLENAME, MIX_TABLENAME]
+            if file_name.split('.')[0] not in valid_file_names:
+                click.echo(click.style("Can only insert files named %s" % ', '.join(valid_file_names), fg='red', bold=True))
+
+            else:
+                token_helpers = TokenHelpers()
+                token_helpers.insert_table(path, file_name.split('.')[0])
+                click.echo(click.style("File %s correctly inserted" % path, fg='green', bold=True))
+
+
 @cli.command('insert_contract')
 @click.option('--address',
               help='Contract address in the Blockchain')
@@ -43,14 +68,12 @@ def insert_contract(address, abi):
 
 
 @cli.command('contracts')
-@click.option('--uri',
-              help='URI of the database (e.g. postgresql://postgres:postgres@localhost:5432/postgres)')
-def contracts(uri):
+def contracts():
     """
     List all contracts
     """
     tab = PrettyTable()
-    helpers = TokenHelpers(uri)
+    helpers = TokenHelpers()
     tab._set_field_names(['Address', 'ID', 'Is listening', 'Last block'])
     for contract in helpers.get_contracts():
         tab.add_row([contract.address, contract.id, contract.is_listening, contract.last_block])

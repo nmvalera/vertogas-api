@@ -28,6 +28,7 @@ setup(
         'gunicorn==19.7.1',
         'idna==2.5',
         'marshmallow==2.13.5',
+        'pandas==0.20.2',
         'prettytable==0.7.2',
         'psycopg2==2.7.1',
         'pylru==1.0.9',
