@@ -44,7 +44,7 @@ def insert_data(paths):
 
             else:
                 token_helpers = TokenHelpers()
-                token_helpers.insert_table(path, file_name.split('.')[0])
+                token_helpers.insert_data(path, file_name.split('.')[0])
                 click.echo(click.style("File %s correctly inserted" % path, fg='green', bold=True))
 
 
