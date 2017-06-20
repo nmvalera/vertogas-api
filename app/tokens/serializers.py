@@ -39,7 +39,7 @@ log_schema = LogSchemaCelery()
 class LogSchemaAPI(Schema):
     block_number = fields.Int(dump_to=BLOCK_NUMBER_KEY)
     timestamp = fields.DateTime()
-    args = fields.Function(lambda obj: json.loads(obj.args))
+    args = fields.Function(lambda obj: json.loads(obj.args.decode()))
 
     event = fields.Nested(EventSchema)
 
