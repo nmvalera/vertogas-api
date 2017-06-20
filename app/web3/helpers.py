@@ -1,6 +1,6 @@
 import json
 
-from .utils import make_filter_param, expand_logs
+from .utils import make_filter_param, expand_logs, format_log_args
 from .web3 import default_web3
 from ..common import config, BLOCK_NUMBER_KEY
 
@@ -28,7 +28,7 @@ class Web3Helpers:
         return self.web3.eth.contract(address, abi=abi)
 
     def enrich_log(self, log):
-        return {**log, 'block': self.get_block(log[BLOCK_NUMBER_KEY])}
+        return {**format_log_args(log), 'block': self.get_block(log[BLOCK_NUMBER_KEY])}
 
     def get_event_logs(self, contract, event, filter_param):
         web3_contract = self.make_web3_contract(contract['address'], abi=json.loads(contract['abi']))
