@@ -1,7 +1,7 @@
 from celery import signature
 
 from .celery import app
-from .common.constants import TASK_UPDATE_LISTENING_CONTRACTS
+from .common import TASK_UPDATE_LISTENING_CONTRACTS
 from .tokens.constants import TASK_INSERT_LOGS, TASK_GET_CONTRACTS
 from .web3.constants import TASK_GET_LOGS
 

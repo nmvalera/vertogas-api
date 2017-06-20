@@ -1,6 +1,6 @@
 from flask import Flask
 
-from .common.config import config
+from .common import config
 
 
 __all__ = [

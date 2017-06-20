@@ -1,7 +1,6 @@
 from celery import Celery, signature
 
-from .common.config import config
-from .common.constants import TASK_UPDATE_LISTENING_CONTRACTS
+from .common import config, TASK_UPDATE_LISTENING_CONTRACTS
 
 
 app = Celery(

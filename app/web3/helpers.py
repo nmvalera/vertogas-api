@@ -2,8 +2,7 @@ import json
 
 from .utils import make_filter_param, expand_logs
 from .web3 import default_web3
-from ..common.config import config
-from ..common.constants import BLOCK_NUMBER_KEY
+from ..common import config, BLOCK_NUMBER_KEY
 
 
 class Web3Helpers:

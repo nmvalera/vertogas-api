@@ -138,6 +138,7 @@ class Token(Base):
     __table_args__ = (
         UniqueConstraint('contract_id', 'certificate_id'),
         Index('%s.owner_index' % TOKEN_TABLENAME, 'owner'),
+        Index('%s.meta_data' % TOKEN_TABLENAME, 'meta_data'),
     )
 
     id = Column(Integer, primary_key=True)

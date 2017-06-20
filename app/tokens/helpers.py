@@ -5,7 +5,7 @@ from sqlalchemy import and_
 from sqlalchemy.exc import IntegrityError
 
 from .models import Base
-from .models import Contract, Event, Log, Token
+from .models import Contract, Event, Log, Token, PowerPlant
 from .serializers import rpc_loader_schema
 from .session import session as default_session
 from .utils import insert_table
@@ -135,6 +135,13 @@ class TokenHelpers:
             query = query.filter_by(token_id=token_id)
 
         query = query.order_by(Log.block_number)
+
+        return query.all()
+
+    def get_power_plants(self, owner):
+        query = self.session. \
+            query(PowerPlant). \
+            filter_by(owner=owner)
 
         return query.all()
 

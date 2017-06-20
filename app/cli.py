@@ -1,9 +1,9 @@
 import click
 
+from .common import FROM_BLOCK_KEY, TO_BLOCK_KEY
+from .tasks import update_contracts_chain
 from .tokens.cli import cli as vertogas_cli
 from .web3.cli import cli as web3_cli
-from .tasks import update_contracts_chain
-from .common.constants import FROM_BLOCK_KEY, TO_BLOCK_KEY
 
 
 @click.group()

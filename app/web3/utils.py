@@ -1,4 +1,4 @@
-from ..common.constants import FROM_BLOCK_KEY, TO_BLOCK_KEY, BLOCK_NUMBER_KEY
+from ..common import FROM_BLOCK_KEY, TO_BLOCK_KEY, BLOCK_NUMBER_KEY
 
 
 def make_filter_param(contract, from_block=None, to_block=None):
