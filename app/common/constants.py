@@ -30,3 +30,13 @@ TO_ADDRESS_KEY = 'to'
 # Main tasks
 TASK_PREFIX = 'main'
 TASK_UPDATE_LISTENING_CONTRACTS = '%s.update_all_listening_contracts' % TASK_PREFIX
+
+# API resources constants
+ALLOWED_CROSS_ORIGIN_DOMAIN = []
+POWER_PLANTS_RESOURCE = '/powerPlants'
+VERTOGAS_URL_PREFIX = '/vertogas'
+TOKENS_RESOURCE = '/tokens'
+LOGS_RESOURCE = '/logs'
+
+# Default contract used by the API
+DEFAULT_CONTRACT_ID = 1
