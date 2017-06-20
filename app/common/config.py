@@ -3,7 +3,8 @@ import os
 
 class DatabaseConfig:
     # Database URI
-    DATABASE_URI = os.environ.get('DATABASE_URI', "postgresql://postgres:postgres@localhost:5432/postgres")
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URI', "postgresql://postgres:postgres@localhost:5432/postgres")
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 
 class ParityServerConfig:

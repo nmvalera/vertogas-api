@@ -21,7 +21,7 @@ CLAIM_CERTIFICATE_EVENT_NAME = 'Claim'
 ADMIN_CLEANING_EVENT_NAME = 'AdminCleaning'
 
 # event inputs
-TOKEN_ID_KEY = 'certifID'
+TOKEN_CERTIFICATE_ID_KEY = 'certifID'
 TOKEN_OWNER_KEY = 'owner'
 TOKEN_META_DATA_KEY = 'metaData'
 FROM_ADDRESS_KEY = 'from'

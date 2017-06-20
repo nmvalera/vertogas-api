@@ -23,3 +23,9 @@ TASK_PREFIX = 'tokens'
 TASK_INSERT_LOGS = '%s.insert_log' % TASK_PREFIX
 TASK_GET_CONTRACT = '%s.get_contract' % TASK_PREFIX
 TASK_GET_CONTRACTS = '%s.get_contracts' % TASK_PREFIX
+
+# Serialization keys
+BLOCK_NUMBER_KEY = 'blockNumber'
+META_DATA_KEY = 'metaData'
+CERTIFICATE_ID_KEY = 'certifID'
+IS_CLAIMED_KEY = 'isClaimed'

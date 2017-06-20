@@ -11,7 +11,7 @@ from .session import session as default_session
 from .utils import insert_table
 from ..common.constants import NEW_CERTIFICATE_EVENT_NAME, TRANSFER_CERTIFICATE_EVENT_NAME, \
     CLAIM_CERTIFICATE_EVENT_NAME, ADMIN_CLEANING_EVENT_NAME, \
-    TOKEN_ID_KEY, TOKEN_OWNER_KEY, TOKEN_META_DATA_KEY, \
+    TOKEN_CERTIFICATE_ID_KEY, TOKEN_OWNER_KEY, TOKEN_META_DATA_KEY, \
     FROM_ADDRESS_KEY, TO_ADDRESS_KEY, TO_BLOCK_KEY
 
 
@@ -43,9 +43,14 @@ class TokenHelpers:
         Base.metadata.drop_all(self.session.get_bind())
         return Base.metadata.tables
 
-    def insert_table(self, path, table_name):
+    def insert_data(self, path, table_name=None):
         con = self.session.get_bind().connect()
-        insert_table(path, table_name, con)
+        if isinstance(path, list):
+            for path, table_name in zip(path, table_name or [None for _ in range(len(path))]):
+                self.insert_data(path, table_name)
+        else:
+            table_name = table_name or path.split('/')[-1].split('.')[0]
+            insert_table(path, table_name, con)
 
     def insert_contract(self, address, contract_abi):
         """
@@ -138,20 +143,25 @@ class TokenHelpers:
 
         return query.all()
 
-    def get_power_plants(self, owner):
+    def get_power_plants(self, contract_id, owner=None):
         query = self.session. \
             query(PowerPlant). \
-            filter_by(owner=owner)
+            filter_by(contract_id=contract_id)
+        if owner is not None:
+            query = query.filter_by(owner=owner)
 
         return query.all()
 
-    def get_tokens(self, contract_id, power_plant_id=None):
+    def get_tokens(self, contract_id, power_plant_id=None, owner=None):
         query = self.session. \
             query(Token). \
             filter_by(contract_id=contract_id)
 
         if power_plant_id is not None:
-            query = query.filter_by(power_plant_id=power_plant_id)
+            query = query.filter(and_(Token.meta_data == PowerPlant.meta_data, PowerPlant.id == power_plant_id))
+
+        if owner is not None:
+            query = query.filter_by(owner=owner)
 
         return query.all()
 
@@ -210,6 +220,7 @@ class TokenHelpers:
             self.flush()
         except IntegrityError:
             self.rollback()
+            self.commit()
             return
         return token
 
@@ -258,36 +269,36 @@ class TokenHelpers:
         """
         event_id = log['event_id']
         log = log['log']
-        block = log['block']
-
         event = self.get_event(event_id)
         
         # ensure the log corresponds to the expected event
         if (event is not None) and (log['event'] == event.name) and (log['address'] == event.contract.address):
             # format log arguments
-            args = {k: encode_hex(v) for k, v in log['args'].items()}
+
+            block = log['block']
+            args = log['args']
 
             # perform modifications on tokens table
             if event.name == NEW_CERTIFICATE_EVENT_NAME:
                 token = self.create_token(event.contract.id,
-                                          args[TOKEN_ID_KEY],
+                                          args[TOKEN_CERTIFICATE_ID_KEY],
                                           args[TOKEN_META_DATA_KEY],
                                           args[TOKEN_OWNER_KEY])
 
             elif event.name == TRANSFER_CERTIFICATE_EVENT_NAME:
                 token = self.transfer_token(event.contract.id,
-                                            args[TOKEN_ID_KEY],
+                                            args[TOKEN_CERTIFICATE_ID_KEY],
                                             args[FROM_ADDRESS_KEY],
                                             args[TO_ADDRESS_KEY])
 
             elif event.name == CLAIM_CERTIFICATE_EVENT_NAME:
                 token = self.claim_token(event.contract.id,
-                                         args[TOKEN_ID_KEY],
+                                         args[TOKEN_CERTIFICATE_ID_KEY],
                                          args[FROM_ADDRESS_KEY])
 
             elif event.name == ADMIN_CLEANING_EVENT_NAME:
                 token = self.claim_token(event.contract.id,
-                                         args[TOKEN_ID_KEY])
+                                         args[TOKEN_CERTIFICATE_ID_KEY])
 
             else:
                 token = None

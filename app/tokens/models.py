@@ -89,9 +89,11 @@ class Log(Base):
 
 class PowerPlant(Base):
     __tablename__ = POWER_PLANT_TABLENAME
-    __table_args__ = (Index('%s.owner_index' % POWER_PLANT_TABLENAME, 'owner'),)
+    __table_args__ = (Index('%s.owner_index' % POWER_PLANT_TABLENAME, 'contract_id', 'owner'),)
 
     id = Column(Integer, primary_key=True)
+    contract_id = Column(Integer, ForeignKey('%s.id' % CONTRACT_TABLENAME), nullable=False, default=1)
+
     meta_data = Column(String, unique=True)
 
     name = Column(String)
@@ -100,9 +102,8 @@ class PowerPlant(Base):
 
     tokens = relationship('Token', back_populates='power_plant', lazy='dynamic')
 
-    mix = relationship('Biomass',
-                       back_populates='power_plants',
-                       secondary=MIX_TABLENAME,
+    mix = relationship('Mix',
+                       back_populates='power_plant',
                        lazy='dynamic')
 
     def __repr__(self):
@@ -115,10 +116,7 @@ class Biomass(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True)
 
-    power_plants = relationship('PowerPlant',
-                                back_populates='mix',
-                                secondary=MIX_TABLENAME,
-                                lazy='dynamic')
+    mixes = relationship('Mix', back_populates='biomass')
 
 
 class Mix(Base):
@@ -128,7 +126,10 @@ class Mix(Base):
     id = Column(Integer, primary_key=True)
 
     power_plant_id = Column(Integer, ForeignKey('%s.id' % POWER_PLANT_TABLENAME))
+    power_plant = relationship('PowerPlant', back_populates='mix')
+
     biomass_id = Column(Integer, ForeignKey('%s.id' % BIOMASS_TABLENAME))
+    biomass = relationship('Biomass', back_populates='mixes')
 
     ratio = Column(Integer)
 
