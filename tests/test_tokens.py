@@ -3,8 +3,9 @@ from sqlalchemy.exc import IntegrityError
 
 from app.tokens.helpers import TokenHelpers
 from app.tokens.models import Contract, Event
-from .testconf import CONTRACT_ADDRESS, CONTRACT_FAKE_ADDRESS, CONTRACT_ABI, \
-    EVENT_NAMES, EVENT_ABIS, make_new_certificate_log, make_transfer_certificate_log, make_claim_certificate_log,\
+from .constants import CONTRACT_ADDRESS, CONTRACT_FAKE_ADDRESS, CONTRACT_ABI, \
+    EVENT_NAMES, EVENT_ABIS
+from .utils import make_new_certificate_log, make_transfer_certificate_log, make_claim_certificate_log, \
     make_admin_clean_certificate_log
 
 
@@ -12,6 +13,10 @@ def setup_module(module):
     """Setup database for testing"""
     token_helpers = TokenHelpers()
     token_helpers.init_db()
+    token_helpers.insert_data(
+        ['data/power_plants_test.pickle', 'data/biomass_test.pickle', 'data/mixes_test.pickle'],
+        ['power_plants', 'biomass', 'mixes']
+    )
     token_helpers.commit()
 
 
@@ -118,11 +123,12 @@ def _test_create_new_token(contract_id, certificate_id, meta_data, owner):
     token_helpers = TokenHelpers()
     tokens_count = len(token_helpers.get_tokens(contract_id))
     token = token_helpers.create_token(contract_id, certificate_id, meta_data, owner)
+    assert token is not None
     token_helpers.commit()
     assert len(token_helpers.get_tokens(contract_id)) == tokens_count + 1
     token = token_helpers.get_token(id=token.id)
     assert token.contract_id == contract_id
-    assert token.meta_data == meta_data.encode()
+    assert token.meta_data == meta_data
     assert token.owner == owner
     assert not token.is_claimed
     assert token.claimer is None
@@ -131,10 +137,7 @@ def _test_create_new_token(contract_id, certificate_id, meta_data, owner):
 def _test_create_existing_token(contract_id, certificate_id, meta_data, owner):
     token_helpers = TokenHelpers()
     tokens_count = len(token_helpers.get_tokens(contract_id))
-    with pytest.raises(IntegrityError):
-        token_helpers.create_token(contract_id, certificate_id, meta_data, owner)
-    token_helpers.rollback()
-    token_helpers.commit()
+    assert token_helpers.create_token(contract_id, certificate_id, meta_data, owner) is None
     assert len(token_helpers.get_tokens(contract_id)) == tokens_count
 
 
@@ -146,7 +149,7 @@ def test_create_token():
     for certificate_id in certificate_ids:
         for contract_id in contract_ids:
             _test_create_new_token(contract_id, certificate_id, meta_data, owner)
-    _test_create_existing_token(1, 'beef', 'meta_data_bis', '0x123434314')
+    _test_create_existing_token(1, 'beef', 'meta_data_2', '0x123434314')
 
 
 def _test_token_content_equals(t1, t2):

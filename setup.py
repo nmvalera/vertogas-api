@@ -25,6 +25,8 @@ setup(
         'ethereum-abi-utils==0.4.0',
         'ethereum-utils==0.2.0',
         'flask==0.12.2',
+        'Flask-RESTful==0.3.5',
+        'Flask-SQLAlchemy==2.2',
         'gunicorn==19.7.1',
         'idna==2.5',
         'marshmallow==2.13.5',
@@ -45,6 +47,7 @@ setup(
             'coverage',
             'pytest>3',
             'pytest-cov',
+            'pytest-flask==0.10.0',
             'tox',
         ]
     },
