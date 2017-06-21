@@ -6,8 +6,6 @@ services:
     command: sh run_celery.sh
     networks:
       - backend
-    volumes:
-      - .:/usr/src/app
     depends_on:
       - redis
       - postgres
@@ -16,18 +14,16 @@ services:
     build: .
     env_file: .env
     environment:
-      - FLASK_DEBUG=True
+      - FLASK_DEBUG=False
     command: sh run_api.sh
     networks:
       - traefik_webgateway
       - backend
-    volumes:
-      - .:/usr/src/app
     depends_on:
       - postgres
     labels:
       - "traefik.enable=true"
-      - "traefik.frontend.rule=Host:api.localhost"
+      - "traefik.frontend.rule=Host:api.vertogas.lab-apps.fr"
       - "traefik.port=80"
       - "traefik.docker.network=traefik_webgateway"
 

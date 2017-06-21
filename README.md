@@ -40,7 +40,7 @@ $ docker-compose -f setup-utils/docker-compose.dev.yml up -d
  Put all 3 .pickle files (power_plants.pickle, biomass.pickle, mixes.pickle) in ```data/``` folder.
 
 
-### Deploy the app
+### Deploy the app in dev mode
 ```bash
 docker-compose -f docker-compose.dev.yml up -d
 ```
