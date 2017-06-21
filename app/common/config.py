@@ -15,7 +15,7 @@ class ParityServerConfig:
 
 class Web3Config(ParityServerConfig):
     # Number of block to wait before inserting an event in the database
-    SAFETY_BLOCK_COUNT = 10
+    SAFETY_BLOCK_COUNT = 2
 
 
 class CeleryConfig:

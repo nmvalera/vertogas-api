@@ -1,5 +1,5 @@
 from sqlalchemy import Column, String, Integer, Boolean, LargeBinary, DateTime, \
-    ForeignKey, UniqueConstraint, Index
+    ForeignKey, UniqueConstraint, Index, ForeignKeyConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -89,18 +89,20 @@ class Log(Base):
 
 class PowerPlant(Base):
     __tablename__ = POWER_PLANT_TABLENAME
-    __table_args__ = (Index('%s.owner_index' % POWER_PLANT_TABLENAME, 'contract_id', 'owner'),)
+    __table_args__ = (
+        UniqueConstraint('contract_id', 'meta_data'),
+        Index('%s.owner_index' % POWER_PLANT_TABLENAME, 'contract_id', 'owner'),)
 
     id = Column(Integer, primary_key=True)
     contract_id = Column(Integer, ForeignKey('%s.id' % CONTRACT_TABLENAME), nullable=False, default=1)
 
-    meta_data = Column(String, unique=True)
+    meta_data = Column(String)
 
     name = Column(String)
 
     owner = Column(String)
 
-    tokens = relationship('Token', back_populates='power_plant', lazy='dynamic')
+    tokens = relationship('Token', lazy='dynamic')
 
     mix = relationship('Mix',
                        back_populates='power_plant',
@@ -140,6 +142,8 @@ class Token(Base):
         UniqueConstraint('contract_id', 'certificate_id'),
         Index('%s.owner_index' % TOKEN_TABLENAME, 'owner'),
         Index('%s.meta_data' % TOKEN_TABLENAME, 'meta_data'),
+        ForeignKeyConstraint(['contract_id', 'meta_data'],
+                             ['%s.contract_id' % POWER_PLANT_TABLENAME, '%s.meta_data' % POWER_PLANT_TABLENAME])
     )
 
     id = Column(Integer, primary_key=True)
@@ -149,8 +153,7 @@ class Token(Base):
     contract_id = Column(Integer, ForeignKey('%s.id' % CONTRACT_TABLENAME))
     contract = relationship('Contract', back_populates='tokens')
 
-    meta_data = Column(String, ForeignKey('%s.meta_data' % POWER_PLANT_TABLENAME))
-    power_plant = relationship('PowerPlant', back_populates='tokens')
+    meta_data = Column(String)
 
     owner = Column(String)
 
