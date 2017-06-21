@@ -2,7 +2,7 @@ from .tokens import vertogas_bp
 
 
 blueprints_list = [
-    vertogas_bp
+    vertogas_bp,
 ]
 
 __all__ = [

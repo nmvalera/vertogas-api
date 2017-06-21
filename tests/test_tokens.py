@@ -13,10 +13,6 @@ def setup_module(module):
     """Setup database for testing"""
     token_helpers = TokenHelpers()
     token_helpers.init_db()
-    token_helpers.insert_data(
-        ['data/power_plants_test.pickle', 'data/biomass_test.pickle', 'data/mixes_test.pickle'],
-        ['power_plants', 'biomass', 'mixes']
-    )
     token_helpers.commit()
 
 
@@ -59,6 +55,15 @@ def test_insert_contract():
     for contract_address in [CONTRACT_ADDRESS, CONTRACT_FAKE_ADDRESS]:
         _test_insert_new_contract(contract_address, CONTRACT_ABI)
     _test_insert_existing_contract(CONTRACT_ADDRESS, CONTRACT_ABI)
+
+
+def test_insert_table():
+    token_helpers = TokenHelpers()
+    token_helpers.insert_data(
+        ['data/power_plants_test.pickle', 'data/biomass_test.pickle', 'data/mixes_test.pickle'],
+        ['power_plants', 'biomass', 'mixes']
+    )
+    token_helpers.commit()
 
 
 def _test_get_contract(contract_id):

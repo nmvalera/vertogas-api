@@ -12,6 +12,7 @@ def setup_module(module):
     token_helpers = TokenHelpers()
     token_helpers.init_db()
     token_helpers.insert_contract(CONTRACT_ADDRESS, CONTRACT_ABI)
+    token_helpers.commit()
     token_helpers.insert_data(
         ['data/power_plants.pickle', 'data/biomass.pickle', 'data/mixes.pickle'],
         ['power_plants', 'biomass', 'mixes']
