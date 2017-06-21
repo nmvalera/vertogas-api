@@ -8,7 +8,8 @@
      - biomass.pickle
      - mixes.pickle
 
-     Data are available from [WeTransfer link](https://we.tl/pM6JUxHOT6) (last updated 2017-06-14 9:00am / 1 week activity)
+     Data are available from [WeTransfer link](https://we.tl/s1dP1sopqn) (last updated 2017-06-21 11:30am / 1 week activity)
+
 ## Clone Project
 ```bash
  $ git clone https://github.com/nicolas-maurice/vertogas-api.git
@@ -21,7 +22,7 @@
  ```bash
  $ sudo sh setup-utils/install_docker.sh
  ```
-
+You can restart your computer to ensure everything is set correctly
 
 ### Deploy Traefik and Portainer
 ```bash
