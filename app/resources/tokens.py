@@ -23,7 +23,7 @@ class PowerPlantResource(Resource):
     def get(self, owner=None):
         token_helpers = TokenHelpers(db.session)
         power_plants = token_helpers.get_power_plants(DEFAULT_CONTRACT_ID, owner)
-        return jsonify(power_plant_schema_api.dump(power_plants, many=True).data)
+        return jsonify({'powerPlants': power_plant_schema_api.dump(power_plants, many=True).data})
 
     # Handles pre-flight OPTIONS http request
     @crossdomain(origin=ALLOWED_CROSS_ORIGIN_DOMAIN, methods=['GET'], headers=['content-type'], credentials=True)
@@ -46,7 +46,7 @@ class TokenResource(Resource):
     def get(self, power_plant_id=None, owner=None):
         token_helpers = TokenHelpers(db.session)
         tokens = token_helpers.get_tokens(DEFAULT_CONTRACT_ID, power_plant_id=power_plant_id, owner=owner)
-        return jsonify(token_schema_api.dump(tokens, many=True).data)
+        return jsonify({'tokens': token_schema_api.dump(tokens, many=True).data})
 
     # Handles pre-flight OPTIONS http request
     @crossdomain(origin=ALLOWED_CROSS_ORIGIN_DOMAIN, methods=['GET'], headers=['content-type'], credentials=True)
@@ -57,7 +57,7 @@ class TokenResource(Resource):
 
 
 vertogas_api.add_resource(TokenResource,
-                          '%s/power_plant/<int:power_plant_id>' % TOKENS_RESOURCE,
+                          '%s/powerPlant/<int:power_plant_id>' % TOKENS_RESOURCE,
                           '%s/owner/<string:owner>' % TOKENS_RESOURCE)
 
 
@@ -69,7 +69,7 @@ class LogResource(Resource):
     def get(self, token_id):
         token_helpers = TokenHelpers(db.session)
         tokens = token_helpers.get_logs(DEFAULT_CONTRACT_ID, token_id)
-        return jsonify(log_schema_api.dump(tokens, many=True).data)
+        return jsonify({'logs': log_schema_api.dump(tokens, many=True).data})
 
     # Handles pre-flight OPTIONS http request
     @crossdomain(origin=ALLOWED_CROSS_ORIGIN_DOMAIN, methods=['GET'], headers=['content-type'], credentials=True)
