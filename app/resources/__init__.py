@@ -1,4 +1,4 @@
-from .tokens import vertogas_bp
+from .vertogas import vertogas_bp
 
 
 blueprints_list = [
