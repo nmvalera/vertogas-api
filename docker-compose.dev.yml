@@ -1,22 +1,34 @@
 version: '3'
 services:
-  app:
+  worker:
+    build: .
+    env_file: .env
+    command: sh run_celery.sh
+    volumes:
+      - .:/usr/src/app
+    networks:
+      - backend
+    depends_on:
+      - redis
+      - postgres
+
+  api:
     build: .
     env_file: .env
     environment:
       - FLASK_DEBUG=True
-    command: sh run.sh
+    command: sh run_api.sh
     volumes:
       - .:/usr/src/app
     networks:
       - traefikportainer_webgateway
       - backend
     depends_on:
-      - redis
       - postgres
     labels:
       - "traefik.enable=true"
-      - "traefik.frontend.rule=Host:app.localhost"
+      - "traefik.frontend.rule=Host:api.localhost"
+      - "traefik.port=80"
       - "traefik.docker.network=traefikportainer_webgateway"
 
   postgres:
