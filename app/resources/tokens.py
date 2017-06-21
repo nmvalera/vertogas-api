@@ -57,6 +57,7 @@ class TokenResource(Resource):
 
 
 vertogas_api.add_resource(TokenResource,
+                          '%s' % TOKENS_RESOURCE,
                           '%s/powerPlant/<int:power_plant_id>' % TOKENS_RESOURCE,
                           '%s/owner/<string:owner>' % TOKENS_RESOURCE)
 

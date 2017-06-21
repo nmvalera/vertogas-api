@@ -92,9 +92,9 @@ From a Google Chrome browser request the nex URL:
   - Addresses of power plants owners :
     - 0x13377b14b615fff59c8e66288c32365d38181cdb
 
- **2. /vertogas/tokens/owner/<string:owner> or /vertogas/tokens/powerPlant/<int:power_plant_id>**
+ **2. /vertogas/tokens or /vertogas/tokens/owner/<string:owner> or /vertogas/tokens/powerPlant/<int:power_plant_id>**
   - method : **GET**
-  - Return the list of tokens owned by owner or produced at power_plant_id
+  - Return the list of tokens respectevely full list, owned by owner, produced at power_plant_id
 
  ```javascript
  {
