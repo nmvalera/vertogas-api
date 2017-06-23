@@ -3,7 +3,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.tokens.helpers import TokenHelpers
 from app.tokens.models import Contract, Event
-from .constants import CONTRACT_ADDRESS, CONTRACT_FAKE_ADDRESS, CONTRACT_ABI, \
+from .constants import CONTRACT_ADDRESS_1, CONTRACT_FAKE_ADDRESS, CONTRACT_ABI_1, \
     EVENT_NAMES, EVENT_ABIS
 from .utils import make_new_certificate_log, make_transfer_certificate_log, make_claim_certificate_log, \
     make_admin_clean_certificate_log
@@ -52,9 +52,9 @@ def _test_insert_existing_contract(contract_address, contract_abi):
 
 
 def test_insert_contract():
-    for contract_address in [CONTRACT_ADDRESS, CONTRACT_FAKE_ADDRESS]:
-        _test_insert_new_contract(contract_address, CONTRACT_ABI)
-    _test_insert_existing_contract(CONTRACT_ADDRESS, CONTRACT_ABI)
+    for contract_address in [CONTRACT_ADDRESS_1, CONTRACT_FAKE_ADDRESS]:
+        _test_insert_new_contract(contract_address, CONTRACT_ABI_1)
+    _test_insert_existing_contract(CONTRACT_ADDRESS_1, CONTRACT_ABI_1)
 
 
 def test_insert_table():

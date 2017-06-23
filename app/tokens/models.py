@@ -30,8 +30,8 @@ class Contract(Base):
     is_listening = Column(Boolean, default=True)
     last_block = Column(Integer, default=-1)
 
+    power_plants = relationship('PowerPlant', back_populates='contract', lazy='dynamic')
     events = relationship('Event', back_populates='contract', lazy='dynamic')
-    tokens = relationship('Token', back_populates='contract', lazy='dynamic')
 
 
 class Event(Base):
@@ -91,10 +91,13 @@ class PowerPlant(Base):
     __tablename__ = POWER_PLANT_TABLENAME
     __table_args__ = (
         UniqueConstraint('contract_id', 'meta_data'),
-        Index('%s.owner_index' % POWER_PLANT_TABLENAME, 'contract_id', 'owner'),)
+        Index('%s.owner_index' % POWER_PLANT_TABLENAME, 'contract_id', 'owner'),
+    )
 
     id = Column(Integer, primary_key=True)
+
     contract_id = Column(Integer, ForeignKey('%s.id' % CONTRACT_TABLENAME), nullable=False, default=1)
+    contract = relationship('Contract', back_populates='power_plants')
 
     meta_data = Column(String)
 
@@ -102,7 +105,7 @@ class PowerPlant(Base):
 
     owner = Column(String)
 
-    tokens = relationship('Token', lazy='dynamic')
+    tokens = relationship('Token', lazy='dynamic', back_populates='power_plant')
 
     mix = relationship('Mix',
                        back_populates='power_plant',
@@ -148,12 +151,12 @@ class Token(Base):
 
     id = Column(Integer, primary_key=True)
 
-    certificate_id = Column(String)
-
-    contract_id = Column(Integer, ForeignKey('%s.id' % CONTRACT_TABLENAME))
-    contract = relationship('Contract', back_populates='tokens')
-
+    contract_id = Column(Integer)
     meta_data = Column(String)
+
+    power_plant = relationship('PowerPlant', back_populates='tokens')
+
+    certificate_id = Column(String)
 
     owner = Column(String)
 

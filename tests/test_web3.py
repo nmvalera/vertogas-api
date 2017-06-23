@@ -1,17 +1,19 @@
 import json
 
+from app.common import FROM_BLOCK_KEY, TO_BLOCK_KEY
 from app.tokens.helpers import TokenHelpers
 from app.tokens.serializers import contract_schema
 from app.web3.helpers import Web3Helpers
 from .constants import BLOCK_NUMBER, BLOCK, \
-    CONTRACT_ADDRESS, CONTRACT_ABI
-from app.common import  FROM_BLOCK_KEY, TO_BLOCK_KEY
+    CONTRACT_ADDRESS_1, CONTRACT_ABI_1, \
+    CONTRACT_ADDRESS_2, CONTRACT_ABI_2
 
 def setup_module(module):
     """Setup database for testing"""
     token_helpers = TokenHelpers()
     token_helpers.init_db()
-    token_helpers.insert_contract(CONTRACT_ADDRESS, CONTRACT_ABI)
+    token_helpers.insert_contract(CONTRACT_ADDRESS_1, CONTRACT_ABI_1)
+    token_helpers.insert_contract(CONTRACT_ADDRESS_2, CONTRACT_ABI_2)
     token_helpers.commit()
     token_helpers.insert_data(
         ['data/power_plants.pickle', 'data/biomass.pickle', 'data/mixes.pickle'],
@@ -42,7 +44,7 @@ def test_get_block():
 
 def test_make_web3_contract():
     web3_helpers = Web3Helpers()
-    web3_contract = web3_helpers.make_web3_contract(CONTRACT_ADDRESS, json.loads(CONTRACT_ABI.decode()))
+    web3_contract = web3_helpers.make_web3_contract(CONTRACT_ADDRESS_1, json.loads(CONTRACT_ABI_1.decode()))
     assert web3_contract
 
 

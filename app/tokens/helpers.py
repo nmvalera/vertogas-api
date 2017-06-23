@@ -1,6 +1,5 @@
 import json
 
-from eth_utils import encode_hex
 from sqlalchemy import and_
 from sqlalchemy.exc import IntegrityError
 
@@ -127,30 +126,32 @@ class TokenHelpers:
 
         return query.all()
 
-    def get_logs(self, contract_id=None, token_id=None):
-
+    def get_logs(self, contract_id, token_id=None):
         query = self.session. \
-            query(Log)
-
-        if contract_id is not None:
-            query = query.filter(Contract.id == contract_id). \
-                filter(and_(Contract.id == Event.contract_id, Event.id == Log.event_id))
+            query(Log). \
+            filter(and_(Event.id == Log.event_id, Event.contract_id == contract_id))
 
         if token_id is not None:
-            query = query.filter_by(token_id=token_id)
-
-        query = query.order_by(Log.block_number)
+            query = query. \
+                filter_by(token_id=token_id)
 
         return query.all()
 
     def get_power_plants(self, contract_id, owner=None):
-        query = self.session. \
-            query(PowerPlant). \
-            filter_by(contract_id=contract_id)
-        if owner is not None:
-            query = query.filter_by(owner=owner)
+        contract = self.session. \
+            query(Contract). \
+            filter_by(id=contract_id). \
+            first()
 
-        return query.all()
+        if contract is not None:
+            query = contract.power_plants
+            if owner is not None:
+                query = query. \
+                    filter_by(owner=owner)
+            return query.all()
+
+        else:
+            return []
 
     def get_tokens(self, contract_id, power_plant_id=None, owner=None):
         query = self.session. \
@@ -220,7 +221,7 @@ class TokenHelpers:
             self.flush()
         except IntegrityError:
             self.rollback()
-            self.commit()
+            self.flush()
             return
         return token
 
@@ -244,7 +245,7 @@ class TokenHelpers:
 
     def claim_token(self, contract_id, certificate_id, claimer_address=None):
         """
-        Claim a tis_claimedoken
+        Claim a token
         :param contract_id: id of the contract the token has been instantiated by        
         :param certificate_id: id of the token to claim
         :param claimer_address: claimer's address in the Blockchain
@@ -270,7 +271,7 @@ class TokenHelpers:
         event_id = log['event_id']
         log = log['log']
         event = self.get_event(event_id)
-        
+
         # ensure the log corresponds to the expected event
         if (event is not None) and (log['event'] == event.name) and (log['address'] == event.contract.address):
             # format log arguments
@@ -322,6 +323,7 @@ class TokenHelpers:
 
         else:
             # compute parameters of interest
+
             contract_id = logs['contract']['id']
             to_block = logs['filter_param'][TO_BLOCK_KEY]
             logs = logs['data']

@@ -10,14 +10,16 @@ from app.tokens.helpers import TokenHelpers
 from app.tokens.serializers import contract_schema
 from app.web3.helpers import Web3Helpers
 from .constants import OWNER_ADDRESS, \
-    CONTRACT_ADDRESS, CONTRACT_ABI
+    CONTRACT_ADDRESS_1, CONTRACT_ABI_1, \
+    CONTRACT_ADDRESS_2, CONTRACT_ABI_2
 
 
 def setup_module(module):
     """Setup database for testing"""
     token_helpers = TokenHelpers()
     token_helpers.init_db()
-    token_helpers.insert_contract(CONTRACT_ADDRESS, CONTRACT_ABI)
+    token_helpers.insert_contract(CONTRACT_ADDRESS_1, CONTRACT_ABI_1)
+    token_helpers.insert_contract(CONTRACT_ADDRESS_2, CONTRACT_ABI_2)
     token_helpers.commit()
     token_helpers.insert_data(
         ['data/power_plants.pickle', 'data/biomass.pickle', 'data/mixes.pickle'],
@@ -78,10 +80,13 @@ class TestSuite:
         self._test_event(log['event'])
         self._test_log_args(log['args'], log['event']['name'])
 
-
     def _test_get_logs(self, token_id):
         response = self._test_get_status200('%s%s/%s' % (VERTOGAS_URL_PREFIX, LOGS_RESOURCE, token_id))
-        logs = response.json
+        assert 'logs' in response.json
+        logs = self._test_logs(response.json['logs'])
+        return logs
+
+    def _test_logs(self, logs):
         assert isinstance(logs, list)
         for log in logs:
             self._test_log(log)
@@ -99,23 +104,25 @@ class TestSuite:
         assert isinstance(tokens, list)
         for token in tokens:
             self._test_token(token)
+        return tokens
 
     def _test_get_tokens_by_power_plant(self, power_plant_id):
-        response = self._test_get_status200('%s%s/power_plant/%s' %
+        response = self._test_get_status200('%s%s/powerPlant/%s' %
                                             (VERTOGAS_URL_PREFIX, TOKENS_RESOURCE, power_plant_id))
-        tokens = response.json
-        self._test_tokens(tokens)
+        assert 'tokens' in response.json
+        tokens = self._test_tokens(response.json['tokens'])
         return tokens
 
     def _test_get_tokens_by_owner(self, owner):
         response = self._test_get_status200('%s%s/owner/%s' % (VERTOGAS_URL_PREFIX, TOKENS_RESOURCE, owner))
-        tokens = response.json
-        self._test_tokens(tokens)
+        assert 'tokens' in response.json
+        tokens = self._test_tokens(response.json['tokens'])
         return tokens
 
     def test_get_tokens(self):
-        tokens = self._test_get_tokens_by_power_plant(3)
+        tokens = self._test_get_tokens_by_power_plant(10)
         assert len(tokens) > 0
+
         self._test_get_tokens_by_owner(OWNER_ADDRESS)
         assert len(tokens) == 1
 
@@ -133,15 +140,19 @@ class TestSuite:
         self._test_mix(power_plant['mix'])
         self._test_tokens(power_plant['tokens'])
 
+    def _test_power_plants(self, power_plants):
+        assert isinstance(power_plants, list)
+        for power_plant in power_plants:
+            self._test_power_plant(power_plant)
+        return power_plants
+
     def test_get_power_plants(self):
         response = self._test_get_status200('%s%s/%s' % (VERTOGAS_URL_PREFIX, POWER_PLANTS_RESOURCE, OWNER_ADDRESS))
-        assert isinstance(response.json, list)
-        assert len(response.json) > 0
-        for power_plant in response.json:
-            self._test_power_plant(power_plant)
+        assert 'powerPlants' in response.json
+        power_plants = self._test_power_plants(response.json['powerPlants'])
+        assert len(power_plants) > 0
 
         response = self._test_get_status200('%s%s' % (VERTOGAS_URL_PREFIX, POWER_PLANTS_RESOURCE))
-        assert isinstance(response.json, list)
-        assert len(response.json) > 0
-        for power_plant in response.json:
-            self._test_power_plant(power_plant)
+        assert 'powerPlants' in response.json
+        power_plants = self._test_power_plants(response.json['powerPlants'])
+        assert len(power_plants) > 0
