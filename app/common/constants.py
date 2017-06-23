@@ -34,6 +34,7 @@ TASK_UPDATE_LISTENING_CONTRACTS = '%s.update_all_listening_contracts' % TASK_PRE
 # API resources constants
 ALLOWED_CROSS_ORIGIN_DOMAIN = [
     'http://localhost:3000',
+    'http://airfrance.eystud.io',
 ]
 
 POWER_PLANTS_RESOURCE = '/powerPlants'
