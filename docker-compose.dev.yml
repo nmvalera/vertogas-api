@@ -19,7 +19,7 @@ services:
       - FLASK_DEBUG=True
     command: sh run_api.sh
     networks:
-      - traefik_webgateway
+      - traefikportainer_webgateway
       - backend
     volumes:
       - .:/usr/src/app
@@ -29,7 +29,7 @@ services:
       - "traefik.enable=true"
       - "traefik.frontend.rule=Host:api.localhost"
       - "traefik.port=80"
-      - "traefik.docker.network=traefik_webgateway"
+      - "traefik.docker.network=traefikportainer_webgateway"
 
   postgres:
     image: postgres:9.6-alpine
@@ -47,7 +47,7 @@ services:
 networks:
   backend:
     driver: bridge
-  traefik_webgateway:
+  traefikportainer_webgateway:
     external: true
 
 
