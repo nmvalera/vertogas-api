@@ -7,7 +7,7 @@ from .constants import CERTIFICATE_ID_KEY, IS_CLAIMED_KEY, META_DATA_KEY
 from .models import Log
 from ..common.constants import BLOCK_HASH_KEY, BLOCK_NUMBER_KEY, BLOCK_TIMESTAMP_KEY, \
     TRANSACTION_HASH_KEY, TRANSACTION_INDEX_KEY, \
-    ARGS_KEY
+    ARGS_KEY, ISSUED_DATE_KEY
 
 
 class EventSchema(Schema):
@@ -78,6 +78,7 @@ class TokenSchemaAPI(Schema):
     certificate_id = fields.Str(dump_to=CERTIFICATE_ID_KEY)
     meta_data = fields.Str(dump_to=META_DATA_KEY)
 
+    issued_date = fields.Str(dump_to=ISSUED_DATE_KEY)
     owner = fields.Str()
 
     is_claimed = fields.Bool(dump_to=IS_CLAIMED_KEY)

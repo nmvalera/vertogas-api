@@ -12,6 +12,7 @@ BLOCK_TIMESTAMP_KEY = 'timestamp'
 TRANSACTION_HASH_KEY = 'transactionHash'
 TRANSACTION_INDEX_KEY = 'transactionIndex'
 ARGS_KEY = 'args'
+ISSUED_DATE_KEY = 'issuedDate'
 
 # Smart contract constants
 # event names

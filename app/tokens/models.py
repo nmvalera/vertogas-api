@@ -154,6 +154,8 @@ class Token(Base):
     contract_id = Column(Integer)
     meta_data = Column(String)
 
+    issued_date = Column(DateTime)
+
     power_plant = relationship('PowerPlant', back_populates='tokens')
 
     certificate_id = Column(String)

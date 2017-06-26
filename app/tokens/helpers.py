@@ -1,3 +1,4 @@
+import datetime
 import json
 
 from sqlalchemy import and_
@@ -9,9 +10,10 @@ from .serializers import rpc_loader_schema
 from .session import session as default_session
 from .utils import insert_table
 from ..common.constants import NEW_CERTIFICATE_EVENT_NAME, TRANSFER_CERTIFICATE_EVENT_NAME, \
-    CLAIM_CERTIFICATE_EVENT_NAME, ADMIN_CLEANING_EVENT_NAME, \
-    TOKEN_CERTIFICATE_ID_KEY, TOKEN_OWNER_KEY, TOKEN_META_DATA_KEY, \
-    FROM_ADDRESS_KEY, TO_ADDRESS_KEY, TO_BLOCK_KEY
+    ADMIN_CLEANING_EVENT_NAME, CLAIM_CERTIFICATE_EVENT_NAME, \
+    TOKEN_CERTIFICATE_ID_KEY, TOKEN_OWNER_KEY, \
+    TOKEN_META_DATA_KEY, \
+    FROM_ADDRESS_KEY, TO_ADDRESS_KEY, TO_BLOCK_KEY, BLOCK_TIMESTAMP_KEY
 
 
 class TokenHelpers:
@@ -202,7 +204,7 @@ class TokenHelpers:
         contract.last_block = last_block
         self.flush()
 
-    def create_token(self, contract_id, certificate_id, meta_data, owner):
+    def create_token(self, contract_id, certificate_id,  meta_data, owner, issued_date):
         """
         Create a new token
         :param contract_id: id of the contract the token has been instantiated by        
@@ -212,10 +214,11 @@ class TokenHelpers:
         :param owner: owner of the created token
         :return: created token
         """
-        token = Token(certificate_id=certificate_id,
-                      contract_id=contract_id,
+        token = Token(contract_id=contract_id,
+                      certificate_id=certificate_id,
                       meta_data=meta_data,
-                      owner=owner)
+                      owner=owner,
+                      issued_date=issued_date)
         self._add(token)
         try:
             self.flush()
@@ -281,10 +284,12 @@ class TokenHelpers:
 
             # perform modifications on tokens table
             if event.name == NEW_CERTIFICATE_EVENT_NAME:
+                issued_date = datetime.datetime.fromtimestamp(block[BLOCK_TIMESTAMP_KEY])
                 token = self.create_token(event.contract.id,
                                           args[TOKEN_CERTIFICATE_ID_KEY],
                                           args[TOKEN_META_DATA_KEY],
-                                          args[TOKEN_OWNER_KEY])
+                                          args[TOKEN_OWNER_KEY],
+                                          issued_date)
 
             elif event.name == TRANSFER_CERTIFICATE_EVENT_NAME:
                 token = self.transfer_token(event.contract.id,

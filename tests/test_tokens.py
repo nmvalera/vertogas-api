@@ -1,4 +1,6 @@
 import pytest
+import datetime
+
 from sqlalchemy.exc import IntegrityError
 
 from app.tokens.helpers import TokenHelpers
@@ -124,10 +126,10 @@ def test_set_last_block():
     _test_set_last_block(1, 124343)
 
 
-def _test_create_new_token(contract_id, certificate_id, meta_data, owner):
+def _test_create_new_token(contract_id, certificate_id, meta_data, owner, issued_date):
     token_helpers = TokenHelpers()
     tokens_count = len(token_helpers.get_tokens(contract_id))
-    token = token_helpers.create_token(contract_id, certificate_id, meta_data, owner)
+    token = token_helpers.create_token(contract_id, certificate_id, meta_data, owner, issued_date)
     assert token is not None
     token_helpers.commit()
     assert len(token_helpers.get_tokens(contract_id)) == tokens_count + 1
@@ -137,12 +139,13 @@ def _test_create_new_token(contract_id, certificate_id, meta_data, owner):
     assert token.owner == owner
     assert not token.is_claimed
     assert token.claimer is None
+    assert token.issued_date == datetime.datetime.min
 
 
-def _test_create_existing_token(contract_id, certificate_id, meta_data, owner):
+def _test_create_existing_token(contract_id, certificate_id, meta_data, owner, issued_date):
     token_helpers = TokenHelpers()
     tokens_count = len(token_helpers.get_tokens(contract_id))
-    assert token_helpers.create_token(contract_id, certificate_id, meta_data, owner) is None
+    assert token_helpers.create_token(contract_id, certificate_id, meta_data, owner, issued_date) is None
     assert len(token_helpers.get_tokens(contract_id)) == tokens_count
 
 
@@ -153,8 +156,8 @@ def test_create_token():
     owner = '0x123434314'
     for certificate_id in certificate_ids:
         for contract_id in contract_ids:
-            _test_create_new_token(contract_id, certificate_id, meta_data, owner)
-    _test_create_existing_token(1, 'beef', 'meta_data_2', '0x123434314')
+            _test_create_new_token(contract_id, certificate_id, meta_data, owner, datetime.datetime.min)
+    _test_create_existing_token(1, 'beef', 'meta_data_2', '0x123434314', datetime.datetime.min)
 
 
 def _test_token_content_equals(t1, t2):
@@ -191,7 +194,7 @@ def test_transfer_token():
     to_address = '0x1ae2bc32a8cc91'
 
     token_helpers = TokenHelpers()
-    token_helpers.create_token(contract_id, certificate_id, meta_data, valid_from_address)
+    token_helpers.create_token(contract_id, certificate_id, meta_data, valid_from_address, datetime.datetime.min)
     token_helpers.commit()
     _test_unauthorized_transfer_token(contract_id, certificate_id, invalid_from_address, to_address)
     _test_authorized_transfer_token(contract_id, certificate_id, valid_from_address, to_address)
@@ -227,7 +230,7 @@ def test_claim_token():
     invalid_claimer_address = '0x78ca24de829aac90'
 
     token_helpers = TokenHelpers()
-    token_helpers.create_token(contract_id, certificate_id, meta_data, valid_claimer_address)
+    token_helpers.create_token(contract_id, certificate_id, meta_data, valid_claimer_address, datetime.datetime.min)
     token_helpers.commit()
     _test_unauthorized_claim_token(contract_id, certificate_id, invalid_claimer_address)
     _test_authorized_claim_token(contract_id, certificate_id, valid_claimer_address)
