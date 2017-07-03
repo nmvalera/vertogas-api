@@ -35,7 +35,7 @@ TASK_UPDATE_LISTENING_CONTRACTS = '%s.update_all_listening_contracts' % TASK_PRE
 
 # API resources constants
 ALLOWED_CROSS_ORIGIN_DOMAIN = [
-    os.environ.get('FLASK_APP_FRONTEND_BASE_URL', 'http://localhost:3000'),
+    os.environ['FLASK_APP_FRONTEND_BASE_URL'],
     # 'http://airfrance.eystud.io',
 ]
 
