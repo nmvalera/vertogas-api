@@ -1,3 +1,5 @@
+pip install -e .
+
 sleep 6
 
 vertogas init_db
