@@ -19,9 +19,9 @@ class DatabaseConfig:
 
 class ParityServerConfig:
     # Address of the parity server
-    PARITY_SERVER_HOST = os.environ.get('PARITY_SERVER_HOST', 'vps412488.ovh.net')
-    PARITY_SERVER_PORT = os.environ.get('PARITY_SERVER_PORT', '1935')
-
+    PARITY_SERVER_HOST = os.environ.get('PARITY_HOST')
+    PARITY_SERVER_PORT = os.environ.get('PARITY_PORT', 80)
+    PARITY_SSL = os.environ.get('PARITY_SSL', False)
 
 class Web3Config(ParityServerConfig):
     # Number of block to wait before inserting an event in the database
